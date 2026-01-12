@@ -1,14 +1,15 @@
-import pygame as pg
+import pygame 
 import engine
 import constants as cst
 
 pygame.init()
-class Player(self,x,y):
+class Player:
     def __init__(self,x,y):
         self.image = cst.Player_img
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
+        return x,y
     def move(self):
         for event in pygame.event.get():
             if event.key == pygame.K_LEFT:

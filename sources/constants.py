@@ -8,3 +8,6 @@ FPS = 60
 # Couleurs
 NOIR = (0, 0, 0)
 BLANC = (255, 255, 255)
+
+#player asset
+Player_img = pg.image.load("placeholder.png").convert_alpha()

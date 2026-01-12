@@ -16,7 +16,7 @@ class Game:
                 if event.type == pg.QUIT:
                     self.play = False
 
-            self.screen.fill(NOIR)
+            self.screen.fill(BLANC)
             
             pg.display.flip()
 

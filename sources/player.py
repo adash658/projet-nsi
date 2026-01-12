@@ -1,4 +1,4 @@
-import pygame
+import pygame as pg
 import engine
 import constants as cst
 
@@ -10,12 +10,13 @@ class Player(self,x,y):
         self.rect.x = x
         self.rect.y = y
     def move(self):
-        if event.key == pygame.K_LEFT:
-            self.rect.move_ip(-2,0)
-        if event.key == pygame.K_RIGHT:
-            self.rect.move_ip(2,0)
-        if event.key == pygame.K_UP:
-            self.rect.move_ip(0,-2)
-        if event.key == pygame.K_DOWN:
-            self.rect.move_ip(0,2)
+        for event in pygame.event.get():
+            if event.key == pygame.K_LEFT:
+                self.rect.move_ip(-2,0)
+            if event.key == pygame.K_RIGHT:
+                self.rect.move_ip(2,0)
+            if event.key == pygame.K_UP:
+                self.rect.move_ip(0,-2)
+            if event.key == pygame.K_DOWN:
+                self.rect.move_ip(0,2)
     

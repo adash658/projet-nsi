@@ -1,5 +1,15 @@
+# Python cache
 __pycache__/
 *.py[cod]
+*.pyc
+*.pyo
+*.pyd
+
+# OS
 .DS_Store
+
+# Virtual environment
 venv/
+
+# Database
 *.db

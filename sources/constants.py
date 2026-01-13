@@ -10,4 +10,4 @@ NOIR = (0, 0, 0)
 BLANC = (255, 255, 255)
 
 #player asset
-Player_img = pg.image.load("placeholder.png").convert_alpha()
+Player_img = pg.image.load("assets/placeholder.png")

@@ -1,23 +1,24 @@
 import pygame 
-import engine
-import constants as cst
+from sources.engine import *
+import sources.constants as cst
 
 pygame.init()
 class Player:
     def __init__(self,x,y):
         self.image = cst.Player_img
         self.rect = self.image.get_rect()
-        self.rect.x = x
-        self.rect.y = y
-        return x,y
+        self.posix = x
+        self.posiy = y 
+        self.speed = 2
     def move(self):
-        for event in pygame.event.get():
-            if event.key == pygame.K_LEFT:
-                self.rect.move_ip(-2,0)
-            if event.key == pygame.K_RIGHT:
-                self.rect.move_ip(2,0)
-            if event.key == pygame.K_UP:
-                self.rect.move_ip(0,-2)
-            if event.key == pygame.K_DOWN:
-                self.rect.move_ip(0,2)
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_LEFT]:
+                self.posix -= self.speed
+            if keys[pygame.K_RIGHT]:
+                self.posix += self.speed
+            if keys[pygame.K_UP]:
+                self.posiy -= self.speed
+            if keys[pygame.K_DOWN]:
+                self.posiy += self.speed
+            self.rect.topleft = (self.posix, self.posiy)
     

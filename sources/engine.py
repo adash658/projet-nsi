@@ -1,5 +1,6 @@
 import pygame as pg
 from sources.constants import *
+from sources.player import *
 
 class Game:
     def __init__(self):
@@ -8,6 +9,7 @@ class Game:
         pg.display.set_caption("Glade")
         self.horloge = pg.time.Clock()
         self.play = True
+        self.player = Player(400,300)
 
     def run(self):
 
@@ -15,8 +17,15 @@ class Game:
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     self.play = False
+<<<<<<< Updated upstream
 
             self.screen.fill(BLANC)
+=======
+            self.player.move()
+            self.screen.fill(BLANC)
+            self.screen.blit(self.player.image, (self.player.posix, self.player.posiy))
+            
+>>>>>>> Stashed changes
             
             pg.display.flip()
 

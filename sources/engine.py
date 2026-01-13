@@ -2,6 +2,7 @@ import pygame as pg
 from sources.constants import *
 from sources.player import *
 
+
 class Game:
     def __init__(self):
         pg.init()

@@ -38,10 +38,10 @@ class Game:
             
             screen_x = self.player.posix - self.camera_x
             screen_y = self.player.posiy - self.camera_y
-            self.screen.blit(self.player.image, (screen_x, screen_y))
+            self.screen.blit(self.player.image, (screen_x - self.player.image.get_width() // 2, screen_y - self.player.image.get_height() // 2))
             
             if self.player.ispaused:
-                self.screen.blit(self.text_pause, (10, 10))
+                self.screen.blit(self.txt_pause, (10, 10))
 
             pg.display.flip()
             self.horloge.tick(FPS)

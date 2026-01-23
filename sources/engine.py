@@ -10,7 +10,7 @@ class Game:
         pg.display.set_caption("Glade")
         self.horloge = pg.time.Clock()
         self.play = True
-        self.player = Player(0, 0, 2, False)
+        self.player = Player(0, 0)
         self.font = pg.font.Font(arial, 20)
         self.txt_pause = self.font.render("Pause, appuyez sur Echap", True, NOIR)
 
@@ -38,7 +38,7 @@ class Game:
             
             screen_x = self.player.posix - self.camera_x
             screen_y = self.player.posiy - self.camera_y
-            self.screen.blit(self.player.image, (screen_x - self.player.image.get_width() // 2, screen_y - self.player.image.get_height() // 2))
+            self.screen.blit(self.player.image, (screen_x - 24, screen_y - 32))
             
             if self.player.ispaused:
                 self.screen.blit(self.txt_pause, (10, 10))

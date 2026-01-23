@@ -1,9 +1,5 @@
 import pygame
-from sources.engine import *
 import sources.constants as cst
-
-pygame.init()
-
 
 class Player:
     def __init__(self, x, y, speed=2, ispaused=False):
@@ -31,5 +27,5 @@ class Player:
         self.ispaused = True
 
     def unlock(self):
-        self.speed = self.speed = 2
+        self.speed = 2
         self.ispaused = False

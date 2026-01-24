@@ -1,6 +1,7 @@
 import pygame as pg
 from sources.constants import *
 from sources.player import *
+from sources.npc import NPC
 
 
 class Game:
@@ -13,26 +14,36 @@ class Game:
         self.player = Player(0, 0)
         self.font = pg.font.Font(arial, 20)
         self.txt_pause = self.font.render("Pause, appuyez sur Echap", True, NOIR)
+        self.npcs = []
+        luna = NPC("luna", 200, 200) 
+        self.npcs.append(luna)
 
     def run(self):
         while self.play:
+
+            self.screen.fill(BLANC)
+
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     self.play = False
                 if event.type == pg.KEYDOWN:
                     if event.key == pg.K_ESCAPE:
+
                         if self.player.ispaused == False:
                             self.player.lock()
                         else:
                             self.player.unlock()
+
+                    if event.key == pg.K_e:
+                        npc = self.player.check_interaction(self.npcs)
+                        if npc:
+                            print(f"Tu parles à {npc}")
 
             if not self.player.ispaused:
                 self.player.move()
 
             self.camera_x = self.player.posix - LARGEUR // 2
             self.camera_y = self.player.posiy - HAUTEUR // 2
-
-            self.screen.fill(BLANC)
 
             pg.draw.rect(self.screen, (255, 0, 0), (300 - self.camera_x, 300 - self.camera_y, 50, 50))
             
@@ -43,6 +54,10 @@ class Game:
             if self.player.ispaused:
                 self.screen.blit(self.txt_pause, (10, 10))
 
+            for pnj in self.npcs:
+                pnj.draw(self.screen, self.camera_x, self.camera_y)
+
             pg.display.flip()
             self.horloge.tick(FPS)
+
         pg.quit()

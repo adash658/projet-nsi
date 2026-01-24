@@ -14,7 +14,7 @@ class Player:
         self.direction = "down"
         self.state = "Idle"
         self.frame_index = 0
-        self.anim_speed = 0.2
+        self.anim_speed = 0.16
         
         self.animations = {"Idle": {}, "Walk": {}}
         self.load_images()
@@ -74,6 +74,14 @@ class Player:
             
         # On prend l'image (l'index devient un nombre entier : 0, 1, 2...)
         self.image = current_anim[int(self.frame_index)]
+
+    def check_interaction(self, npcs):
+        interaction_rect = self.rect.inflate(40, 40) 
+    
+        for npc in npcs:
+            if interaction_rect.colliderect(npc.rect):
+                return npc.name
+        return None
 
     def lock(self): 
         self.ispaused = True

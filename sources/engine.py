@@ -2,6 +2,8 @@ import pygame as pg
 from sources.constants import *
 from sources.player import *
 from sources.npc import NPC
+from pytmx.util_pygame import load_pygame
+from Tile import Tile
 
 
 class Game:
@@ -15,13 +17,16 @@ class Game:
         self.font = pg.font.Font(arial, 20)
         self.txt_pause = self.font.render("Pause, appuyez sur Echap", True, NOIR)
         self.npcs = []
-        luna = NPC("luna", 200, 200) 
+        luna = NPC("luna", 200, 200)
         self.npcs.append(luna)
+        self.tmx_data = load_pygame("assets/map.tmx")
+        self.sprite_group = pg.sprite.Group()
 
     def run(self):
         while self.play:
 
             self.screen.fill(BLANC)
+            self.sprite_group.draw(self.screen)
 
             for event in pg.event.get():
                 if event.type == pg.QUIT:
@@ -42,15 +47,28 @@ class Game:
             if not self.player.ispaused:
                 self.player.move()
 
+            for layer in self.tmx_data.layers:
+                if hasattr(layer, "data"):
+                    for x, y, surf in layer.tiles():
+                        pos = (
+                            x * self.tmx_data.tilewidth,
+                            y * self.tmx_data.tileheight,
+                        )
+                        Tile(pos=pos, image=surf, groups=self.sprite_group)
+
             self.camera_x = self.player.posix - LARGEUR // 2
             self.camera_y = self.player.posiy - HAUTEUR // 2
 
-            pg.draw.rect(self.screen, (255, 0, 0), (300 - self.camera_x, 300 - self.camera_y, 50, 50))
-            
+            pg.draw.rect(
+                self.screen,
+                (255, 0, 0),
+                (300 - self.camera_x, 300 - self.camera_y, 50, 50),
+            )
+
             screen_x = self.player.posix - self.camera_x
             screen_y = self.player.posiy - self.camera_y
             self.screen.blit(self.player.image, (screen_x - 24, screen_y - 32))
-            
+
             if self.player.ispaused:
                 self.screen.blit(self.txt_pause, (10, 10))
 

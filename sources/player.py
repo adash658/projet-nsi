@@ -1,11 +1,12 @@
 import pygame
 import os
 
+
 class Player:
     def __init__(self, x, y):
         self.posix = x
         self.posiy = y
-        self.speed = 2
+        self.speed = 5
         self.ispaused = False
 
         self.base_w, self.base_h = 48, 64
@@ -15,30 +16,33 @@ class Player:
         self.state = "Idle"
         self.frame_index = 0
         self.anim_speed = 0.16
-        
+
         self.animations = {"Idle": {}, "Walk": {}}
         self.load_images()
-        
+
         self.image = self.animations["Idle"]["down"][0]
         self.rect = self.image.get_rect(center=(x, y))
 
     def load_images(self):
-            for state in ["Idle", "Walk"]:
-                for direction in ["up", "down", "left", "right"]:
-                    path = f"assets/player/{state}/{state.lower()}_{direction}.png"
-                    
-                    if os.path.exists(path):
-                        strip = pygame.image.load(path).convert_alpha()
-                        frames = []
-                        for x in range(0, strip.get_width(), self.base_w):
-                            rect = pygame.Rect(x, 0, self.base_w, self.base_h)
-                            frame = strip.subsurface(rect)
-                            scaled_frame = pygame.transform.scale_by(frame, self.scale_factor)
-                            frames.append(scaled_frame)
-                        self.animations[state][direction] = frames
+        for state in ["Idle", "Walk"]:
+            for direction in ["up", "down", "left", "right"]:
+                path = f"assets/player/{state}/{state.lower()}_{direction}.png"
+
+                if os.path.exists(path):
+                    strip = pygame.image.load(path).convert_alpha()
+                    frames = []
+                    for x in range(0, strip.get_width(), self.base_w):
+                        rect = pygame.Rect(x, 0, self.base_w, self.base_h)
+                        frame = strip.subsurface(rect)
+                        scaled_frame = pygame.transform.scale_by(
+                            frame, self.scale_factor
+                        )
+                        frames.append(scaled_frame)
+                    self.animations[state][direction] = frames
 
     def move(self):
-        if self.ispaused: return
+        if self.ispaused:
+            return
 
         keys = pygame.key.get_pressed()
         moving = False
@@ -57,33 +61,34 @@ class Player:
             self.direction, moving = "down", True
 
         self.state = "Walk" if moving else "Idle"
-        
+
         self.animate()
         self.rect.center = (self.posix, self.posiy)
 
     def animate(self):
-        """ Fait défiler les images """
+        """Fait défiler les images"""
         current_anim = self.animations[self.state][self.direction]
-        
+
         # On augmente l'index
         self.frame_index += self.anim_speed
-        
+
         # Si on dépasse le nombre d'images, on revient à 0
         if self.frame_index >= len(current_anim):
             self.frame_index = 0
-            
+
         # On prend l'image (l'index devient un nombre entier : 0, 1, 2...)
         self.image = current_anim[int(self.frame_index)]
 
     def check_interaction(self, npcs):
-        interaction_rect = self.rect.inflate(40, 40) 
-    
+        interaction_rect = self.rect.inflate(40, 40)
+
         for npc in npcs:
             if interaction_rect.colliderect(npc.rect):
                 return npc.name
         return None
 
-    def lock(self): 
+    def lock(self):
         self.ispaused = True
-    def unlock(self): 
+
+    def unlock(self):
         self.ispaused = False

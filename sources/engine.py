@@ -21,12 +21,29 @@ class Game:
         self.npcs.append(luna)
         self.tmx_data = load_pygame("assets/map.tmx")
         self.sprite_group = pg.sprite.Group()
+        self.camera_x = 0
+        self.camera_y = 0
+        for layer in self.tmx_data.layers:
+            if hasattr(layer, "data"):
+                for x, y, surf in layer.tiles():
+                    pos = (
+                        x * self.tmx_data.tilewidth,
+                        y * self.tmx_data.tileheight,
+                    )
+                    Tile(pos=pos, image=surf, groups=self.sprite_group)
 
     def run(self):
         while self.play:
 
             self.screen.fill(BLANC)
-            self.sprite_group.draw(self.screen)
+            for sprite in self.sprite_group:
+                # Calculer la position à l’écran par rapport à la caméra
+                screen_pos = (
+                    sprite.rect.x - self.camera_x,
+                    sprite.rect.y - self.camera_y,
+                )
+                # Dessiner la tuile à cette position
+                self.screen.blit(sprite.image, screen_pos)
 
             for event in pg.event.get():
                 if event.type == pg.QUIT:
@@ -46,15 +63,6 @@ class Game:
 
             if not self.player.ispaused:
                 self.player.move()
-
-            for layer in self.tmx_data.layers:
-                if hasattr(layer, "data"):
-                    for x, y, surf in layer.tiles():
-                        pos = (
-                            x * self.tmx_data.tilewidth,
-                            y * self.tmx_data.tileheight,
-                        )
-                        Tile(pos=pos, image=surf, groups=self.sprite_group)
 
             self.camera_x = self.player.posix - LARGEUR // 2
             self.camera_y = self.player.posiy - HAUTEUR // 2

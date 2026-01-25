@@ -4,7 +4,7 @@ from sources.player import *
 from sources.npc import NPC
 from pytmx.util_pygame import load_pygame
 from sources.Tile import Tile
-
+from sources.database import Dialogue
 
 class Game:
     def __init__(self):
@@ -17,7 +17,8 @@ class Game:
         self.font = pg.font.Font(arial, 20)
         self.txt_pause = self.font.render("Pause, appuyez sur Echap", True, NOIR)
         self.npcs = []
-        luna = NPC("luna", 200, 200)
+        self.current_dialogue = None
+        luna = NPC("luna", 200, 200) 
         self.npcs.append(luna)
         self.tmx_data = load_pygame("assets/map.tmx")
         self.sprite_group = pg.sprite.Group()
@@ -37,20 +38,18 @@ class Game:
 
             self.screen.fill(BLANC)
             for sprite in self.sprite_group:
-                # Calculer la position à l’écran par rapport à la caméra
                 screen_pos = (
                     sprite.rect.x - self.camera_x,
                     sprite.rect.y - self.camera_y,
                 )
-                # Dessiner la tuile à cette position
                 self.screen.blit(sprite.image, screen_pos)
 
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     self.play = False
                 if event.type == pg.KEYDOWN:
+                    
                     if event.key == pg.K_ESCAPE:
-
                         if self.player.ispaused == False:
                             self.player.lock()
                         else:
@@ -59,7 +58,9 @@ class Game:
                     if event.key == pg.K_e:
                         npc = self.player.check_interaction(self.npcs)
                         if npc:
-                            print(f"Tu parles à {npc}")
+                            phrase = Dialogue.dialogue(npc, ordre=1)
+                            self.current_dialogue = phrase
+                            print(f"{npc} : {phrase}")
 
             if not self.player.ispaused:
                 self.player.move()

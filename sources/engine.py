@@ -24,26 +24,45 @@ class Game:
         self.sprite_group = pg.sprite.Group()
         self.camera_x = 0
         self.camera_y = 0
-        for layer in self.tmx_data.layers:
-            if hasattr(layer, "data"):
-                for x, y, surf in layer.tiles():
-                    pos = (
-                        x * self.tmx_data.tilewidth,
-                        y * self.tmx_data.tileheight,
-                    )
-                    Tile(pos=pos, image=surf, groups=self.sprite_group)
+        map_width = self.tmx_data.width * self.tmx_data.tilewidth
+        map_height = self.tmx_data.height * self.tmx_data.tileheight
+        self.map_surface = pg.Surface((map_width, map_height)).convert()
+        self.render_map()
+        self.starting = True
 
     def run(self):
         while self.play:
+            while self.starting:
+                self.screen.fill(BLANC)
+                txt_start = self.font.render("Appuyez sur une touche pour commencer", True, NOIR)
+                pg.draw.rect(
+                    self.screen,
+                    (0, 0, 255),
+                    (LARGEUR // 2 - 150, HAUTEUR // 2 - 30, 300, 60)
+                    )
+
+                self.screen.blit(txt_start, (LARGEUR // 2 - txt_start.get_width() // 2, HAUTEUR // 2))
+                pg.display.flip()
+                for event in pg.event.get():
+                    if event.type == pg.QUIT:
+                        self.play = False
+                        self.starting = False
+                    if event.type == pg.KEYDOWN:
+                        self.starting = False
+                button_rect = pg.Rect(
+                        LARGEUR // 2 - 150,
+                        HAUTEUR // 2 - 30,
+                        300,
+                        60
+                    )
+                if button_rect.collidepoint(pg.mouse.get_pos()):
+                    self.starting = False
 
             self.screen.fill(BLANC)
-            for sprite in self.sprite_group:
-                screen_pos = (
-                    sprite.rect.x - self.camera_x,
-                    sprite.rect.y - self.camera_y,
+            self.screen.blit(
+                self.map_surface,
+                (-self.camera_x, -self.camera_y)
                 )
-                self.screen.blit(sprite.image, screen_pos)
-
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     self.play = False
@@ -88,3 +107,12 @@ class Game:
             self.horloge.tick(FPS)
 
         pg.quit()
+    def render_map(self):
+            for layer in self.tmx_data.visible_layers:
+                if hasattr(layer, "tiles"):
+                    for x, y, image in layer.tiles():
+                        self.map_surface.blit(
+                            image,
+                            (x * self.tmx_data.tilewidth,
+                            y * self.tmx_data.tileheight)
+                        )

@@ -18,14 +18,15 @@ class Game:
         self.txt_pause = self.font.render("Pause, appuyez sur Echap", True, NOIR)
         self.npcs = []
         self.current_dialogue = None
-        luna = NPC("luna", 200, 200) 
-        self.npcs.append(luna)
+        self.current_player = None
+        Luna = NPC("Luna", 200, 200) 
+        self.npcs.append(Luna)
         self.tmx_data = load_pygame("assets/map.tmx")
         self.sprite_group = pg.sprite.Group()
         self.camera_x = 0
         self.camera_y = 0
-        map_width = self.tmx_data.width * self.tmx_data.tilewidth
-        map_height = self.tmx_data.height * self.tmx_data.tileheight
+        map_width = self.tmx_data.width * self.tmx_data.tilewidth * 2
+        map_height = self.tmx_data.height * self.tmx_data.tileheight * 2
         self.map_surface = pg.Surface((map_width, map_height)).convert()
         self.render_map()
         self.starting = True
@@ -77,10 +78,15 @@ class Game:
                     if event.key == pg.K_e:
                         npc = self.player.check_interaction(self.npcs)
                         if npc:
-                            phrase = Dialogue.dialogue(npc, ordre=1)
-                            self.current_dialogue = phrase
-                            print(f"{npc} : {phrase}")
-
+                            if self.current_dialogue:
+                                self.current_dialogue = None
+                                self.current_speaker = None
+                            else:
+                                phrase = Dialogue.dialogue(npc, ordre=1)
+                                self.current_dialogue = phrase
+                                self.current_speaker = npc
+                        else:
+                            self.current_dialogue = None
             if not self.player.ispaused:
                 self.player.move()
 
@@ -103,16 +109,35 @@ class Game:
             for pnj in self.npcs:
                 pnj.draw(self.screen, self.camera_x, self.camera_y)
 
+            self.draw_dialogue()
+
             pg.display.flip()
             self.horloge.tick(FPS)
 
         pg.quit()
+
     def render_map(self):
-            for layer in self.tmx_data.visible_layers:
-                if hasattr(layer, "tiles"):
-                    for x, y, image in layer.tiles():
-                        self.map_surface.blit(
-                            image,
-                            (x * self.tmx_data.tilewidth,
-                            y * self.tmx_data.tileheight)
-                        )
+        scaled_cache = {}
+        for layer in self.tmx_data.visible_layers:
+            if hasattr(layer, "tiles"):
+                for x, y, image in layer.tiles():
+                    if image not in scaled_cache:
+                        scaled_cache[image] = pg.transform.scale_by(image, 2)
+                    scaled_image = scaled_cache[image]
+                    self.map_surface.blit(
+                        scaled_image,
+                        (x * self.tmx_data.tilewidth *2,
+                        y * self.tmx_data.tileheight *2)
+                    )
+
+    def draw_dialogue(self):
+        if self.current_dialogue:
+            box_rect = pg.Rect(50, HAUTEUR - 150, LARGEUR - 100, 120)
+            pg.draw.rect(self.screen, (0, 0, 0), box_rect)
+            pg.draw.rect(self.screen, (255, 255, 255), box_rect, 5)
+            
+            nom_surface = self.font.render(self.current_speaker, True, (255, 255, 0))
+            self.screen.blit(nom_surface, (box_rect.x + 20, box_rect.y + 10))
+
+            texte_surface = self.font.render(self.current_dialogue, True, (255, 255, 255))
+            self.screen.blit(texte_surface, (box_rect.x + 20, box_rect.y + 40))

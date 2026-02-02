@@ -3,7 +3,7 @@ from sources.constants import *
 from sources.player import *
 from sources.npc import NPC
 from pytmx.util_pygame import load_pygame
-from sources.Tile import Tile
+from sources.tile import Tile , CollisionTile
 from sources.database import Dialogue
 
 class Game:
@@ -23,6 +23,7 @@ class Game:
         self.npcs.append(Luna)
         self.tmx_data = load_pygame("assets/map.tmx")
         self.sprite_group = pg.sprite.Group()
+        self.collisions = pg.sprite.Group()
         self.camera_x = 0
         self.camera_y = 0
         map_width = self.tmx_data.width * self.tmx_data.tilewidth * 2
@@ -30,6 +31,15 @@ class Game:
         self.map_surface = pg.Surface((map_width, map_height)).convert()
         self.render_map()
         self.starting = True
+        for layer in self.tmx_data.layers:
+            if layer.name == "collision":
+                for x, y, _ in layer.tiles():
+                    CollisionTile(
+                        x * self.tmx_data.tilewidth,
+                        y * self.tmx_data.tileheight,
+                        self.tmx_data.tilewidth,
+                        self.collisions
+                        )
 
     def run(self):
         while self.play:
@@ -88,7 +98,7 @@ class Game:
                         else:
                             self.current_dialogue = None
             if not self.player.ispaused:
-                self.player.move()
+                self.player.move(self.collisions)
 
             self.camera_x = self.player.posix - LARGEUR // 2
             self.camera_y = self.player.posiy - HAUTEUR // 2

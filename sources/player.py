@@ -40,30 +40,54 @@ class Player:
                         frames.append(scaled_frame)
                     self.animations[state][direction] = frames
 
-    def move(self):
+    def move(self, walls):
         if self.ispaused:
             return
 
+        dx = dy = 0
         keys = pygame.key.get_pressed()
         moving = False
 
         if keys[pygame.K_LEFT]:
-            self.posix -= self.speed
-            self.direction, moving = "left", True
+            dx = -self.speed
+            self.direction = "left"
+            moving = True
         elif keys[pygame.K_RIGHT]:
-            self.posix += self.speed
-            self.direction, moving = "right", True
+            dx = self.speed
+            self.direction = "right"
+            moving = True
         elif keys[pygame.K_UP]:
-            self.posiy -= self.speed
-            self.direction, moving = "up", True
+            dy = -self.speed
+            self.direction = "up"
+            moving = True
         elif keys[pygame.K_DOWN]:
-            self.posiy += self.speed
-            self.direction, moving = "down", True
+            dy = self.speed
+            self.direction = "down"
+            moving = True
 
         self.state = "Walk" if moving else "Idle"
 
+        # --- COLLISION X ---
+        self.rect.x += dx
+        for wall in walls:
+            if self.rect.colliderect(wall.rect):
+                if dx > 0:
+                    self.rect.right = wall.rect.left
+                elif dx < 0:
+                    self.rect.left = wall.rect.right
+        # --- COLLISION Y ---
+        self.rect.y += dy
+        for wall in walls:
+            if self.rect.colliderect(wall.rect):
+                if dy > 0:
+                    self.rect.bottom = wall.rect.top
+                elif dy < 0:
+                    self.rect.top = wall.rect.bottom
+        # Synchronisation monde
+        self.posix = self.rect.centerx
+        self.posiy = self.rect.centery
+
         self.animate()
-        self.rect.center = (self.posix, self.posiy)
 
     def animate(self):
         """Fait défiler les images"""

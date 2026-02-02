@@ -19,7 +19,7 @@ class Game:
         self.npcs = []
         self.current_dialogue = None
         self.current_player = None
-        Luna = NPC("Luna", 200, 200) 
+        Luna = NPC("Luna", 200, 200, "assets/luna.png") 
         self.npcs.append(Luna)
         self.tmx_data = load_pygame("assets/map.tmx")
         self.sprite_group = pg.sprite.Group()
@@ -111,7 +111,7 @@ class Game:
 
             screen_x = self.player.posix - self.camera_x
             screen_y = self.player.posiy - self.camera_y
-            self.screen.blit(self.player.image, (screen_x - 24, screen_y - 32))
+            self.screen.blit(self.player.image, (screen_x - 48, screen_y - 64))
 
             if self.player.ispaused:
                 self.screen.blit(self.txt_pause, (10, 10))

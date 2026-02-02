@@ -21,7 +21,8 @@ class Player:
         self.load_images()
 
         self.image = self.animations["Idle"]["down"][0]
-        self.rect = self.image.get_rect(center=(x, y))
+        self.rect = pygame.Rect(0, 0, 32, 64) 
+        self.rect.center = (x, y)
 
     def load_images(self):
         for state in ["Idle", "Walk"]:
@@ -104,7 +105,7 @@ class Player:
         self.image = current_anim[int(self.frame_index)]
 
     def check_interaction(self, npcs):
-        interaction_rect = self.rect.inflate(40, 40)
+        interaction_rect = self.rect.inflate(12, 12)
 
         for npc in npcs:
             if interaction_rect.colliderect(npc.rect):

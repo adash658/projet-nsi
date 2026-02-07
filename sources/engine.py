@@ -40,10 +40,20 @@ class Game:
                         self.tmx_data.tilewidth,
                         self.collisions
                         )
-
+        self.intro_lines = [
+            "12:34 - AN 56 - 07 AOUT",
+            "",
+            """59° 2?' ??" N, 18° 5?' ??" E""",
+            "",
+            ""
+        ]
+        self.in_intro = True
+        self.intro_start_time = 0
+        self.intro_duration = 5658
     def run(self):
         while self.play:
             while self.starting:
+
                 self.screen.fill(BLANC)
                 txt_start = self.font.render("Appuyez sur une touche pour commencer", True, NOIR)
                 pg.draw.rect(
@@ -51,9 +61,9 @@ class Game:
                     (0, 0, 255),
                     (LARGEUR // 2 - 150, HAUTEUR // 2 - 30, 300, 60)
                     )
-
                 self.screen.blit(txt_start, (LARGEUR // 2 - txt_start.get_width() // 2, HAUTEUR // 2))
                 pg.display.flip()
+
                 for event in pg.event.get():
                     if event.type == pg.QUIT:
                         self.play = False
@@ -68,6 +78,11 @@ class Game:
                     )
                 if button_rect.collidepoint(pg.mouse.get_pos()):
                     self.starting = False
+
+                self.intro_start_time = pg.time.get_ticks()
+                
+            while self.in_intro and self.play:
+                self.update_intro()
 
             self.screen.fill(BLANC)
             self.screen.blit(
@@ -125,6 +140,31 @@ class Game:
             self.horloge.tick(FPS)
 
         pg.quit()
+
+    def update_intro(self):
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                self.play = False
+                self.in_intro = False
+
+        current_time = pg.time.get_ticks()
+        
+        if current_time - self.intro_start_time > self.intro_duration:
+            self.in_intro = False
+            return
+
+        self.screen.fill((0, 0, 0))
+        
+        hauteur_ligne = 40
+        hauteur_totale = len(self.intro_lines) * hauteur_ligne
+        start_y = (HAUTEUR - hauteur_totale) // 2 
+
+        for i, phrase in enumerate(self.intro_lines):
+            text_surf = self.font.render(phrase, True, (255, 255, 255))
+            text_rect = text_surf.get_rect(center=(LARGEUR // 2, start_y + i * hauteur_ligne))
+            self.screen.blit(text_surf, text_rect)
+
+        pg.display.flip()
 
     def render_map(self):
         scaled_cache = {}

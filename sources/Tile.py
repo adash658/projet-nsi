@@ -7,6 +7,6 @@ class Tile(pg.sprite.Sprite):
         self.image = image.convert_alpha()
         self.rect = self.image.get_rect(topleft=pos)
 class CollisionTile(pg.sprite.Sprite):
-    def __init__(self, x, y, size, groups):
+    def __init__(self, x, y, width, height, groups):
         super().__init__(groups)
-        self.rect = pg.Rect(x, y, size, size)
+        self.rect = pg.Rect(x, y, width, height)

@@ -13,7 +13,12 @@ class Game:
         pg.display.set_caption("Glade")
         self.horloge = pg.time.Clock()
         self.play = True
-        self.player = Player(0, 0)
+        self.tmx_data = load_pygame("assets/map.tmx")
+        self.map_width = self.tmx_data.width * self.tmx_data.tilewidth * 2
+        self.map_height = self.tmx_data.height * self.tmx_data.tileheight * 2
+        self.player = Player(self.map_width // 2, self.map_height // 2)
+        self.rect = pygame.Rect(0, 0, 32, 32)
+        self.rect.center = (self.player.posix, self.player.posiy)
         self.font = pg.font.Font(arial, 20)
         self.txt_pause = self.font.render("Pause, appuyez sur Echap", True, NOIR)
         self.npcs = []
@@ -21,25 +26,10 @@ class Game:
         self.current_player = None
         Luna = NPC("Luna", 200, 200, "assets/luna.png") 
         self.npcs.append(Luna)
-        self.tmx_data = load_pygame("assets/map.tmx")
         self.sprite_group = pg.sprite.Group()
         self.collisions = pg.sprite.Group()
         self.camera_x = 0
         self.camera_y = 0
-        map_width = self.tmx_data.width * self.tmx_data.tilewidth * 2
-        map_height = self.tmx_data.height * self.tmx_data.tileheight * 2
-        self.map_surface = pg.Surface((map_width, map_height)).convert()
-        self.render_map()
-        self.starting = True
-        for layer in self.tmx_data.layers:
-            if layer.name == "collision":
-                for x, y, _ in layer.tiles():
-                    CollisionTile(
-                        x * self.tmx_data.tilewidth,
-                        y * self.tmx_data.tileheight,
-                        self.tmx_data.tilewidth,
-                        self.collisions
-                        )
         self.intro_lines = [
             "12:34 - AN 56 - 07 AOUT",
             "",
@@ -50,6 +40,17 @@ class Game:
         self.in_intro = True
         self.intro_start_time = 0
         self.intro_duration = 5658
+
+        self.map_surface = pg.Surface((self.map_width, self.map_height)).convert()
+        self.render_map()
+        self.starting = True
+        for layer in self.tmx_data.layers:
+            if layer.name == "collision":
+                for obj in layer:
+                    CollisionTile(
+                        obj.x * 2,
+                    )
+
     def run(self):
         while self.play:
             while self.starting:

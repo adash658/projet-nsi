@@ -41,7 +41,7 @@ class Player:
                         frames.append(scaled_frame)
                     self.animations[state][direction] = frames
 
-    def move(self, walls):
+    def move(self, collisions):
         if self.ispaused:
             return
 
@@ -70,7 +70,7 @@ class Player:
 
         # --- COLLISION X ---
         self.rect.x += dx
-        for wall in walls:
+        for wall in collisions:
             if self.rect.colliderect(wall.rect):
                 if dx > 0:
                     self.rect.right = wall.rect.left
@@ -78,7 +78,7 @@ class Player:
                     self.rect.left = wall.rect.right
         # --- COLLISION Y ---
         self.rect.y += dy
-        for wall in walls:
+        for wall in collisions:
             if self.rect.colliderect(wall.rect):
                 if dy > 0:
                     self.rect.bottom = wall.rect.top

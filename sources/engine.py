@@ -3,8 +3,9 @@ from sources.constants import *
 from sources.player import *
 from sources.npc import NPC
 from pytmx.util_pygame import load_pygame
-from sources.tile import Tile , CollisionTile
+from sources.Tile import Tile, CollisionTile
 from sources.database import Dialogue
+
 
 class Game:
     def __init__(self):
@@ -24,7 +25,7 @@ class Game:
         self.npcs = []
         self.current_dialogue = None
         self.current_player = None
-        Luna = NPC("Luna", 200, 200, "assets/luna.png") 
+        Luna = NPC("Luna", 200, 200, "assets/luna.png")
         self.npcs.append(Luna)
         self.sprite_group = pg.sprite.Group()
         self.collisions = pg.sprite.Group()
@@ -49,6 +50,10 @@ class Game:
                 for obj in layer:
                     CollisionTile(
                         obj.x * 2,
+                        obj.y * 2,
+                        obj.width * 2,
+                        obj.height * 2,
+                        self.collisions,
                     )
 
     def run(self):

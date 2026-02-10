@@ -3,7 +3,7 @@ from sources.constants import *
 from sources.player import *
 from sources.npc import NPC
 from pytmx.util_pygame import load_pygame
-from sources.Tile import Tile, CollisionTile
+from sources.tile import Tile, CollisionTile
 from sources.database import Dialogue
 
 

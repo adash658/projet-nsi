@@ -85,6 +85,36 @@ class Game:
                 if button_rect.collidepoint(pg.mouse.get_pos()):
                     self.starting = False
 
+                self.screen.fill(BLANC)
+                #txt_start = self.font.render("Appuyez sur une touche pour commencer", True, NOIR)
+                
+                play_button = pg.image.load("assets/Menu/Main Menu/Play_Not-Pressed.png")
+                play_pressed_button = pg.image.load("assets/Menu/Main Menu/Play_Pressed.png")
+                play_rect = play_button.get_rect(center=(LARGEUR//2, 250))
+                logo = pg.image.load("")
+                logo_rect = logo.get_rect(center=(LARGEUR//2, 500))
+                self.screen.blit(play_button, play_rect)
+                self.screen.blit(logo, logo_rect)
+                
+                pg.display.flip()
+
+                for event in pg.event.get():
+                    if event.type == pg.QUIT:
+                        self.play = False
+                        self.starting = False
+                    if event.type == pg.MOUSEBUTTONDOWN:
+                        if play_rect.collidepoint(event.pos):
+                            self.screen.blit(play_pressed_button, play_rect)
+                            self.starting = False
+                #button_rect = pg.Rect(
+                #        LARGEUR // 2 - 150,
+                 #       HAUTEUR // 2 - 30,
+                  #      300,
+                   #     60
+                    #)
+                if button_rect.collidepoint(pg.mouse.get_pos()):
+                    self.starting = False
+
                 self.intro_start_time = pg.time.get_ticks()
                 
             while self.in_intro and self.play:

@@ -31,6 +31,16 @@ class Game:
         self.collisions = pg.sprite.Group()
         self.camera_x = 0
         self.camera_y = 0
+
+        self.ecran_titre = pg.image.load("assets/Glade.png").convert()
+        self.ecran_titre = pg.transform.scale(self.ecran_titre, (LARGEUR, HAUTEUR))
+        image_play = pg.image.load("assets/Menu/Main Menu/Play_Not-Pressed.png").convert_alpha()
+        image_play_pressed = pg.image.load("assets/Menu/Main Menu/Play_Pressed.png").convert_alpha()
+        self.play_button = pg.transform.scale_by(image_play, 5)
+        self.play_pressed_button = pg.transform.scale_by(image_play_pressed, 5)
+        self.play_rect = self.play_button.get_rect(midbottom=(LARGEUR // 2, HAUTEUR - 30))
+        self.button_pressed = False
+
         self.intro_lines = [
             "12:34 - AN 56 - 07 AOUT",
             "",
@@ -60,60 +70,32 @@ class Game:
         while self.play:
             while self.starting:
 
-                self.screen.fill(BLANC)
-                txt_start = self.font.render("Appuyez sur une touche pour commencer", True, NOIR)
-                pg.draw.rect(
-                    self.screen,
-                    (0, 0, 255),
-                    (LARGEUR // 2 - 150, HAUTEUR // 2 - 30, 300, 60)
-                    )
-                self.screen.blit(txt_start, (LARGEUR // 2 - txt_start.get_width() // 2, HAUTEUR // 2))
+                self.screen.blit(self.ecran_titre, (0, 0))
+                
+                if self.button_pressed:
+                    self.screen.blit(self.play_pressed_button, self.play_rect)
+                else:
+                    self.screen.blit(self.play_button, self.play_rect)
+
                 pg.display.flip()
 
                 for event in pg.event.get():
                     if event.type == pg.QUIT:
                         self.play = False
                         self.starting = False
-                    if event.type == pg.KEYDOWN:
-                        self.starting = False
-                button_rect = pg.Rect(
-                        LARGEUR // 2 - 150,
-                        HAUTEUR // 2 - 30,
-                        300,
-                        60
-                    )
-                if button_rect.collidepoint(pg.mouse.get_pos()):
-                    self.starting = False
-
-                self.screen.fill(BLANC)
-                #txt_start = self.font.render("Appuyez sur une touche pour commencer", True, NOIR)
-                
-                play_button = pg.image.load("assets/Menu/Main Menu/Play_Not-Pressed.png")
-                play_pressed_button = pg.image.load("assets/Menu/Main Menu/Play_Pressed.png")
-                play_rect = play_button.get_rect(center=(LARGEUR//2, 250))
-                logo = pg.image.load("")
-                logo_rect = logo.get_rect(center=(LARGEUR//2, 500))
-                self.screen.blit(play_button, play_rect)
-                self.screen.blit(logo, logo_rect)
-                
-                pg.display.flip()
-
-                for event in pg.event.get():
-                    if event.type == pg.QUIT:
-                        self.play = False
-                        self.starting = False
-                    if event.type == pg.MOUSEBUTTONDOWN:
-                        if play_rect.collidepoint(event.pos):
-                            self.screen.blit(play_pressed_button, play_rect)
+                    
+                    elif event.type == pg.KEYDOWN:
+                        if event.key == pg.K_RETURN:
                             self.starting = False
-                #button_rect = pg.Rect(
-                #        LARGEUR // 2 - 150,
-                 #       HAUTEUR // 2 - 30,
-                  #      300,
-                   #     60
-                    #)
-                if button_rect.collidepoint(pg.mouse.get_pos()):
-                    self.starting = False
+                            
+                    elif event.type == pg.MOUSEBUTTONDOWN:
+                        if event.button == 1 and self.play_rect.collidepoint(event.pos):
+                            self.button_pressed = True
+                            
+                    elif event.type == pg.MOUSEBUTTONUP:
+                        if event.button == 1 and self.button_pressed:
+                            self.starting = False
+                        self.button_pressed = False
 
                 self.intro_start_time = pg.time.get_ticks()
                 

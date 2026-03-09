@@ -37,7 +37,7 @@ class Game:
         self.tmx_data = load_pygame("assets/map.tmx")
         self.map_width = self.tmx_data.width * self.tmx_data.tilewidth * 4
         self.map_height = self.tmx_data.height * self.tmx_data.tileheight * 4
-        self.player = Player(self.map_width // 2, self.map_height // 2)
+        self.player = Player(1500, 7500)
         self.rect = pygame.Rect(0, 0, 32, 32)
         self.rect.center = (self.player.posix, self.player.posiy)
         self.font = pg.font.Font(CHEMIN_POLICE, 30)

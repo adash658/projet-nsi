@@ -10,10 +10,20 @@ class NPC:
         else:
             self.image = pygame.image.load(image_path).convert_alpha()
 
-        self.image = pygame.transform.scale_by(self.image, 2)
+        self.image = pygame.transform.scale_by(self.image, 4)
 
-        self.rect = pygame.Rect(0, 0, 32, 16) 
+        self.rect = pygame.Rect(0, 0, 32, 64) 
         self.rect.center = (x, y)
+
+        self.portraits = {}
+        emotions = ["angry", "happy", "neutral", "sad"]
+        for emotion in emotions:
+            try:
+                chemin = f"assets/pnj/{self.name}/{emotion}.png"
+                img = pygame.image.load(chemin).convert_alpha()
+                self.portraits[emotion] = pygame.transform.scale_by(img, 1)
+            except FileNotFoundError:
+                pass
 
     def draw(self, screen, camera_x, camera_y):
         image_rect = self.image.get_rect(center=self.rect.center)

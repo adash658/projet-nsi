@@ -6,6 +6,31 @@ from pytmx.util_pygame import load_pygame
 from sources.tile import Tile, CollisionTile
 from sources.database import Dialogue
 
+def preparer_portrait(image_brute, hauteur_finale, epaisseur_bordure):
+    """
+    Recadre l'image en carré centré, la redimensionne, 
+    et dessine une bordure noire PAR-DESSUS les bords.
+    """
+    # 1. Trouver le plus petit côté pour faire un carré parfait
+    largeur_origine, hauteur_origine = image_brute.get_size()
+    cote_carre = min(largeur_origine, hauteur_origine)
+    
+    # 2. Centrer le recadrage
+    x_crop = (largeur_origine - cote_carre) // 2
+    y_crop = (hauteur_origine - cote_carre) // 2
+    
+    # 3. Couper l'image
+    rect_crop = pg.Rect(x_crop, y_crop, cote_carre, cote_carre)
+    image_carree = image_brute.subsurface(rect_crop)
+    
+    # 4. Redimensionner à la taille voulue (ex: 100x100)
+    portrait_final = pg.transform.smoothscale(image_carree, (hauteur_finale, hauteur_finale))
+    
+    # 5. Dessiner la bordure noire directement SUR l'image
+    # Le paramètre 'epaisseur_bordure' à la fin dit à Pygame de ne pas remplir le carré, mais de faire un contour
+    pg.draw.rect(portrait_final, (0, 0, 0), portrait_final.get_rect(), epaisseur_bordure)
+    
+    return portrait_final
 
 class Game:
     def __init__(self):
@@ -15,8 +40,8 @@ class Game:
         self.horloge = pg.time.Clock()
         self.play = True
         self.tmx_data = load_pygame("assets/map.tmx")
-        self.map_width = self.tmx_data.width * self.tmx_data.tilewidth * 2
-        self.map_height = self.tmx_data.height * self.tmx_data.tileheight * 2
+        self.map_width = self.tmx_data.width * self.tmx_data.tilewidth * 4
+        self.map_height = self.tmx_data.height * self.tmx_data.tileheight * 4
         self.player = Player(self.map_width // 2, self.map_height // 2)
         self.rect = pygame.Rect(0, 0, 32, 32)
         self.rect.center = (self.player.posix, self.player.posiy)
@@ -25,7 +50,7 @@ class Game:
         self.npcs = []
         self.current_dialogue = None
         self.current_player = None
-        Luna = NPC("Luna", 200, 200, "assets/luna.png")
+        Luna = NPC("Luna",(self.map_width // 2)-64, (self.map_height // 2)+12, "assets/luna.png")
         self.npcs.append(Luna)
         self.sprite_group = pg.sprite.Group()
         self.collisions = pg.sprite.Group()
@@ -59,10 +84,10 @@ class Game:
             if layer.name == "collision":
                 for obj in layer:
                     CollisionTile(
-                        obj.x * 2,
-                        obj.y * 2,
-                        obj.width * 2,
-                        obj.height * 2,
+                        obj.x * 4,
+                        obj.y * 4,
+                        obj.width * 4,
+                        obj.height * 4,
                         self.collisions,
                     )
 
@@ -119,15 +144,22 @@ class Game:
                             self.player.unlock()
 
                     if event.key == pg.K_e:
-                        npc = self.player.check_interaction(self.npcs)
-                        if npc:
+                        npc_name = self.player.check_interaction(self.npcs)
+                        if npc_name:
                             if self.current_dialogue:
                                 self.current_dialogue = None
-                                self.current_speaker = None
+                                self.current_speaker_name = None
+                                self.current_speaker_obj = None
+                                self.current_emotion = None
                             else:
-                                phrase = Dialogue.dialogue(npc, ordre=1)
+                                phrase, emotion = Dialogue.dialogue(npc_name, 1)
                                 self.current_dialogue = phrase
-                                self.current_speaker = npc
+                                self.current_speaker_name = npc_name
+                                self.current_emotion = emotion
+                                for pnj in self.npcs:
+                                    if pnj.name == npc_name:
+                                        self.current_speaker_obj = pnj
+                                        break
                         else:
                             self.current_dialogue = None
             if not self.player.ispaused:
@@ -136,15 +168,11 @@ class Game:
             self.camera_x = self.player.posix - LARGEUR // 2
             self.camera_y = self.player.posiy - HAUTEUR // 2
 
-            pg.draw.rect(
-                self.screen,
-                (255, 0, 0),
-                (300 - self.camera_x, 300 - self.camera_y, 50, 50),
-            )
-
-            screen_x = self.player.posix - self.camera_x
-            screen_y = self.player.posiy - self.camera_y
-            self.screen.blit(self.player.image, (screen_x - 48, screen_y - 64))
+            player_rect_screen = self.player.rect.copy()
+            player_rect_screen.x -= self.camera_x
+            player_rect_screen.y -= self.camera_y
+            player_image_rect = self.player.image.get_rect(center=player_rect_screen.center)
+            self.screen.blit(self.player.image, player_image_rect)
 
             if self.player.ispaused:
                 self.screen.blit(self.txt_pause, (10, 10))
@@ -163,6 +191,9 @@ class Game:
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 self.play = False
+                self.in_intro = False
+            keys = pg.key.get_pressed()
+            if keys[pg.K_a] and keys[pg.K_z] and keys[pg.K_e]:
                 self.in_intro = False
 
         current_time = pg.time.get_ticks()
@@ -190,22 +221,47 @@ class Game:
             if hasattr(layer, "tiles"):
                 for x, y, image in layer.tiles():
                     if image not in scaled_cache:
-                        scaled_cache[image] = pg.transform.scale_by(image, 2)
+                        scaled_cache[image] = pg.transform.scale_by(image, 4)
                     scaled_image = scaled_cache[image]
                     self.map_surface.blit(
                         scaled_image,
-                        (x * self.tmx_data.tilewidth *2,
-                        y * self.tmx_data.tileheight *2)
+                        (x * self.tmx_data.tilewidth *4,
+                        y * self.tmx_data.tileheight *4)
                     )
 
     def draw_dialogue(self):
         if self.current_dialogue:
-            box_rect = pg.Rect(50, HAUTEUR - 150, LARGEUR - 100, 120)
+            box_rect = pg.Rect(200, HAUTEUR - 250, LARGEUR - 400, 200)
             pg.draw.rect(self.screen, (0, 0, 0), box_rect)
             pg.draw.rect(self.screen, (255, 255, 255), box_rect, 5)
             
-            nom_surface = self.font.render(self.current_speaker, True, (255, 255, 0))
+            if self.current_emotion and self.current_speaker_obj and self.current_emotion in self.current_speaker_obj.portraits:
+                image_brute = self.current_speaker_obj.portraits[self.current_emotion]
+                
+                portrait = preparer_portrait(image_brute, 250, 10)
+                
+                self.screen.blit(portrait, (box_rect.x, box_rect.y - 250))
+
+            nom_surface = self.font.render(self.current_speaker_name, True, (255, 255, 0))
             self.screen.blit(nom_surface, (box_rect.x + 20, box_rect.y + 10))
 
-            texte_surface = self.font.render(self.current_dialogue, True, (255, 255, 255))
-            self.screen.blit(texte_surface, (box_rect.x + 20, box_rect.y + 40))
+            text_wrap_rect = pg.Rect(box_rect.x + 20, box_rect.y + 50, box_rect.width - 40, box_rect.height - 70)
+            self.draw_text_wrapped(self.screen, self.current_dialogue, (255, 255, 255), text_wrap_rect, self.font)
+
+    def draw_text_wrapped(self, surface, text, color, rect, font):
+        mots = text.split(' ')
+        lignes = []
+        ligne_en_cours = ""
+        
+        for mot in mots:
+            test_ligne = ligne_en_cours + mot + " "
+            if font.size(test_ligne)[0] < rect.width:
+                ligne_en_cours = test_ligne
+            else:
+                lignes.append(ligne_en_cours)
+                ligne_en_cours = mot + " "
+        lignes.append(ligne_en_cours)
+
+        for i, ligne in enumerate(lignes):
+            texte_surface = font.render(ligne, True, color)
+            surface.blit(texte_surface, (rect.x, rect.y + (i * 30)))

@@ -6,11 +6,11 @@ class Player:
     def __init__(self, x, y):
         self.posix = x
         self.posiy = y
-        self.speed = 2
+        self.speed = 3
         self.ispaused = False
 
         self.base_w, self.base_h = 48, 64
-        self.scale_factor = 2
+        self.scale_factor = 4
 
         self.direction = "down"
         self.state = "Idle"
@@ -49,19 +49,19 @@ class Player:
         keys = pygame.key.get_pressed()
         moving = False
 
-        if keys[pygame.K_LEFT]:
+        if keys[pygame.K_LEFT] or keys[pygame.K_q]:
             dx = -self.speed
             self.direction = "left"
             moving = True
-        elif keys[pygame.K_RIGHT]:
+        elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
             dx = self.speed
             self.direction = "right"
             moving = True
-        elif keys[pygame.K_UP]:
+        elif keys[pygame.K_UP] or keys[pygame.K_z]:
             dy = -self.speed
             self.direction = "up"
             moving = True
-        elif keys[pygame.K_DOWN]:
+        elif keys[pygame.K_DOWN] or keys[pygame.K_s]:
             dy = self.speed
             self.direction = "down"
             moving = True
@@ -105,7 +105,7 @@ class Player:
         self.image = current_anim[int(self.frame_index)]
 
     def check_interaction(self, npcs):
-        interaction_rect = self.rect.inflate(12, 12)
+        interaction_rect = self.get_interaction_rect()
 
         for npc in npcs:
             if interaction_rect.colliderect(npc.rect):
@@ -117,3 +117,22 @@ class Player:
 
     def unlock(self):
         self.ispaused = False
+
+    def get_interaction_rect(self):
+        taille_zone = 48
+        distance_devant = 40
+        
+        rect = pygame.Rect(0, 0, taille_zone, taille_zone)
+        rect.center = self.rect.center
+
+        if self.direction == "up":
+            rect.centery -= distance_devant
+        elif self.direction == "down":
+            rect.centery += distance_devant
+        elif self.direction == "left":
+            rect.centerx -= distance_devant
+        elif self.direction == "right":
+            rect.centerx += distance_devant
+            
+        return rect
+

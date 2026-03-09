@@ -9,4 +9,4 @@ FPS = 60
 NOIR = (0, 0, 0)
 BLANC = (255, 255, 255)
 
-arial = pg.font.match_font("arial")
+CHEMIN_POLICE = "assets/fonts/yoster.ttf"

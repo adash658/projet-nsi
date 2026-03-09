@@ -7,15 +7,10 @@ from sources.tile import Tile, CollisionTile
 from sources.database import Dialogue
 
 def preparer_portrait(image_brute, hauteur_finale, epaisseur_bordure):
-    """
-    Recadre l'image en carré centré, la redimensionne, 
-    et dessine une bordure noire PAR-DESSUS les bords.
-    """
-    # 1. Trouver le plus petit côté pour faire un carré parfait
+
     largeur_origine, hauteur_origine = image_brute.get_size()
     cote_carre = min(largeur_origine, hauteur_origine)
     
-    # 2. Centrer le recadrage
     x_crop = (largeur_origine - cote_carre) // 2
     y_crop = (hauteur_origine - cote_carre) // 2
     
@@ -45,7 +40,8 @@ class Game:
         self.player = Player(self.map_width // 2, self.map_height // 2)
         self.rect = pygame.Rect(0, 0, 32, 32)
         self.rect.center = (self.player.posix, self.player.posiy)
-        self.font = pg.font.Font(arial, 20)
+        self.font = pg.font.Font(CHEMIN_POLICE, 30)
+        self.font_petite = pg.font.Font(CHEMIN_POLICE, 20)
         self.txt_pause = self.font.render("Pause, appuyez sur Echap", True, NOIR)
         self.npcs = []
         self.current_dialogue = None
@@ -56,7 +52,6 @@ class Game:
         self.collisions = pg.sprite.Group()
         self.camera_x = 0
         self.camera_y = 0
-
         self.ecran_titre = pg.image.load("assets/Glade.png").convert()
         self.ecran_titre = pg.transform.scale(self.ecran_titre, (LARGEUR, HAUTEUR))
         image_play = pg.image.load("assets/Menu/Main Menu/Play_Not-Pressed.png").convert_alpha()

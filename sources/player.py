@@ -120,7 +120,7 @@ class Player:
 
     def get_interaction_rect(self):
         taille_zone = 48
-        distance_devant = 40
+        distance_devant = 48
         
         rect = pygame.Rect(0, 0, taille_zone, taille_zone)
         rect.center = self.rect.center

@@ -10,21 +10,12 @@ def preparer_portrait(image_brute, hauteur_finale, epaisseur_bordure):
 
     largeur_origine, hauteur_origine = image_brute.get_size()
     cote_carre = min(largeur_origine, hauteur_origine)
-    
     x_crop = (largeur_origine - cote_carre) // 2
     y_crop = (hauteur_origine - cote_carre) // 2
-    
-    # 3. Couper l'image
     rect_crop = pg.Rect(x_crop, y_crop, cote_carre, cote_carre)
     image_carree = image_brute.subsurface(rect_crop)
-    
-    # 4. Redimensionner à la taille voulue (ex: 100x100)
     portrait_final = pg.transform.smoothscale(image_carree, (hauteur_finale, hauteur_finale))
-    
-    # 5. Dessiner la bordure noire directement SUR l'image
-    # Le paramètre 'epaisseur_bordure' à la fin dit à Pygame de ne pas remplir le carré, mais de faire un contour
     pg.draw.rect(portrait_final, (0, 0, 0), portrait_final.get_rect(), epaisseur_bordure)
-    
     return portrait_final
 
 class Game:
@@ -41,13 +32,19 @@ class Game:
         self.rect = pygame.Rect(0, 0, 32, 32)
         self.rect.center = (self.player.posix, self.player.posiy)
         self.font = pg.font.Font(CHEMIN_POLICE, 30)
-        self.font_petite = pg.font.Font(CHEMIN_POLICE, 20)
+        self.font_intro = pg.font.Font(POLICE_INTRO, 30)
         self.txt_pause = self.font.render("Pause, appuyez sur Echap", True, NOIR)
-        self.npcs = []
         self.current_dialogue = None
         self.current_player = None
-        Luna = NPC("Luna",(self.map_width // 2)-64, (self.map_height // 2)+12, "assets/luna.png")
-        self.npcs.append(Luna)
+        cx = self.map_width // 2
+        cy = self.map_height // 2
+        Luna = NPC("Luna", cx - 200, cy + 50, "assets/luna.png")
+        Gatouz = NPC("Gatouz", cx + 200, cy - 50, "assets/gatouz.png")
+        Wina = NPC("Wina", cx - 150, cy - 200, "assets/wina.png")
+        Spensi = NPC("Spensi", cx + 250, cy + 150, "assets/spensi.png")
+        Kiko = NPC("Kiko", cx, cy + 250, "assets/kiko.png")
+        self.npcs = []
+        self.npcs.extend([Luna, Gatouz, Wina, Spensi, Kiko])
         self.sprite_group = pg.sprite.Group()
         self.collisions = pg.sprite.Group()
         self.camera_x = 0
@@ -60,6 +57,8 @@ class Game:
         self.play_pressed_button = pg.transform.scale_by(image_play_pressed, 5)
         self.play_rect = self.play_button.get_rect(midbottom=(LARGEUR // 2, HAUTEUR - 30))
         self.button_pressed = False
+        self.dialogue_pages = []
+        self.current_page = 0
 
         self.intro_lines = [
             "12:34 - AN 56 - 07 AOUT",
@@ -139,26 +138,54 @@ class Game:
                             self.player.unlock()
 
                     if event.key == pg.K_e:
-                        npc_name = self.player.check_interaction(self.npcs)
-                        if npc_name:
-                            if self.current_dialogue:
+                        if self.current_dialogue:
+                            # 1. Le dialogue est ouvert : E permet de le quitter de force
+                            self.current_dialogue = None
+                            self.current_speaker_name = None
+                            self.current_speaker_obj = None
+                            self.current_emotion = None
+                            self.dialogue_pages = []
+
+                        else:
+                            npc_name = self.player.check_interaction(self.npcs)
+                            if npc_name:
+                                if self.current_dialogue:
+                                    self.current_dialogue = None
+                                    self.current_speaker_name = None
+                                    self.current_speaker_obj = None
+                                    self.current_emotion = None
+                                else:
+                                    phrase, emotion = Dialogue.dialogue(npc_name, 1)
+                                    self.current_dialogue = phrase
+                                    self.current_speaker_name = npc_name
+                                    self.current_emotion = emotion
+                                    for pnj in self.npcs:
+                                        if pnj.name == npc_name:
+                                            self.current_speaker_obj = pnj
+                                            break
+                                    box_rect = pg.Rect(200, HAUTEUR - 250, LARGEUR - 400, 200)
+                                    text_wrap_rect = pg.Rect(box_rect.x + 20, box_rect.y + 50, box_rect.width - 40, box_rect.height - 70)
+                                    self.dialogue_pages = self.calculer_pages(phrase, text_wrap_rect, self.font, max_lignes=4)
+                                    self.current_page = 0
+                            else:
+                                self.current_dialogue = None
+                    if event.key == pg.K_RETURN:
+                        if self.current_dialogue:
+                            if self.current_page < len(self.dialogue_pages) - 1:
+                                self.current_page += 1
+                            else:
                                 self.current_dialogue = None
                                 self.current_speaker_name = None
                                 self.current_speaker_obj = None
                                 self.current_emotion = None
-                            else:
-                                phrase, emotion = Dialogue.dialogue(npc_name, 1)
-                                self.current_dialogue = phrase
-                                self.current_speaker_name = npc_name
-                                self.current_emotion = emotion
-                                for pnj in self.npcs:
-                                    if pnj.name == npc_name:
-                                        self.current_speaker_obj = pnj
-                                        break
-                        else:
-                            self.current_dialogue = None
+                                self.dialogue_pages = []
+
             if not self.player.ispaused:
-                self.player.move(self.collisions)
+                if self.current_dialogue:
+                    self.player.state = "Idle"
+                    self.player.animate()
+                else:
+                    self.player.move(self.collisions)
 
             self.camera_x = self.player.posix - LARGEUR // 2
             self.camera_y = self.player.posiy - HAUTEUR // 2
@@ -204,7 +231,7 @@ class Game:
         start_y = (HAUTEUR - hauteur_totale) // 2 
 
         for i, phrase in enumerate(self.intro_lines):
-            text_surf = self.font.render(phrase, True, (255, 255, 255))
+            text_surf = self.font_intro.render(phrase, True, (255, 255, 255))
             text_rect = text_surf.get_rect(center=(LARGEUR // 2, start_y + i * hauteur_ligne))
             self.screen.blit(text_surf, text_rect)
 
@@ -229,21 +256,30 @@ class Game:
             box_rect = pg.Rect(200, HAUTEUR - 250, LARGEUR - 400, 200)
             pg.draw.rect(self.screen, (0, 0, 0), box_rect)
             pg.draw.rect(self.screen, (255, 255, 255), box_rect, 5)
-            
+
             if self.current_emotion and self.current_speaker_obj and self.current_emotion in self.current_speaker_obj.portraits:
                 image_brute = self.current_speaker_obj.portraits[self.current_emotion]
-                
-                portrait = preparer_portrait(image_brute, 250, 10)
-                
-                self.screen.blit(portrait, (box_rect.x, box_rect.y - 250))
+                portrait = preparer_portrait(image_brute, 256, 10)
+                self.screen.blit(portrait, (box_rect.x, box_rect.y - 256))
 
-            nom_surface = self.font.render(self.current_speaker_name, True, (255, 255, 0))
+            couleur_nom = COULEURS_PNJ.get(self.current_speaker_name, (255, 255, 0))
+            nom_surface = self.font.render(self.current_speaker_name, True, couleur_nom)
             self.screen.blit(nom_surface, (box_rect.x + 20, box_rect.y + 10))
 
             text_wrap_rect = pg.Rect(box_rect.x + 20, box_rect.y + 50, box_rect.width - 40, box_rect.height - 70)
-            self.draw_text_wrapped(self.screen, self.current_dialogue, (255, 255, 255), text_wrap_rect, self.font)
 
-    def draw_text_wrapped(self, surface, text, color, rect, font):
+            if hasattr(self, 'dialogue_pages') and self.dialogue_pages:
+                lignes_a_afficher = self.dialogue_pages[self.current_page]
+                
+                for i, ligne in enumerate(lignes_a_afficher):
+                    texte_surface = self.font.render(ligne, True, (255, 255, 255))
+                    self.screen.blit(texte_surface, (text_wrap_rect.x, text_wrap_rect.y + (i * 35)))
+                
+                if self.current_page < len(self.dialogue_pages) - 1:
+                    triangle_surf = self.font_intro.render("▼", True, (255, 255, 0))
+                    self.screen.blit(triangle_surf, (box_rect.right - 30, box_rect.bottom - 40))
+
+    def calculer_pages(self, text, rect, font, max_lignes=4):
         mots = text.split(' ')
         lignes = []
         ligne_en_cours = ""
@@ -256,7 +292,9 @@ class Game:
                 lignes.append(ligne_en_cours)
                 ligne_en_cours = mot + " "
         lignes.append(ligne_en_cours)
-
-        for i, ligne in enumerate(lignes):
-            texte_surface = font.render(ligne, True, color)
-            surface.blit(texte_surface, (rect.x, rect.y + (i * 30)))
+        
+        pages = []
+        for i in range(0, len(lignes), max_lignes):
+            pages.append(lignes[i:i + max_lignes])
+            
+        return pages

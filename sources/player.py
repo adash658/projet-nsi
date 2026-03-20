@@ -10,7 +10,7 @@ class Player:
         self.ispaused = False
 
         self.base_w, self.base_h = 48, 64
-        self.scale_factor = 4
+        self.scale_factor = 1
 
         self.direction = "down"
         self.state = "Idle"
@@ -21,27 +21,30 @@ class Player:
         self.load_images()
 
         self.image = self.animations["Idle"]["down"][0]
-        self.rect = pygame.Rect(0, 0, 32, 64) 
+        self.rect = pygame.Rect(0, 0, 48, 16) 
         self.rect.center = (x, y)
 
     def load_images(self):
-        for state in ["Idle", "Walk"]:
-            for direction in ["up", "down", "left", "right"]:
-                path = f"assets/player/{state}/{state.lower()}_{direction}.png"
+        direction_map = {"down": "D", "left": "L", "right": "R", "up": "U"}
 
+        self.animations["Idle"] = {}
+        for direction, code in direction_map.items():
+            path = f"assets/player/Idle/I{code}.png"
+            if os.path.exists(path):
+                img = pygame.image.load(path).convert_alpha()
+                self.animations["Idle"][direction] = [pygame.transform.scale_by(img, self.scale_factor)]
+
+        self.animations["Walk"] = {}
+        for direction, code in direction_map.items():
+            frames = []
+            for i in range(1, 5):
+                path = f"assets/player/Walk/{code}{i}.png"
                 if os.path.exists(path):
-                    strip = pygame.image.load(path).convert_alpha()
-                    frames = []
-                    for x in range(0, strip.get_width(), self.base_w):
-                        rect = pygame.Rect(x, 0, self.base_w, self.base_h)
-                        frame = strip.subsurface(rect)
-                        scaled_frame = pygame.transform.scale_by(
-                            frame, self.scale_factor
-                        )
-                        frames.append(scaled_frame)
-                    self.animations[state][direction] = frames
+                    img = pygame.image.load(path).convert_alpha()
+                    frames.append(pygame.transform.scale_by(img, self.scale_factor))
+            self.animations["Walk"][direction] = frames
 
-    def move(self, collisions):
+    def move(self, obstacles):
         if self.ispaused:
             return
 
@@ -70,20 +73,20 @@ class Player:
 
         # --- COLLISION X ---
         self.rect.x += dx
-        for wall in collisions:
-            if self.rect.colliderect(wall.rect):
+        for obstacle in obstacles:
+            if self.rect.colliderect(obstacle):
                 if dx > 0:
-                    self.rect.right = wall.rect.left
+                    self.rect.right = obstacle.left
                 elif dx < 0:
-                    self.rect.left = wall.rect.right
+                    self.rect.left = obstacle.right
         # --- COLLISION Y ---
         self.rect.y += dy
-        for wall in collisions:
-            if self.rect.colliderect(wall.rect):
+        for obstacle in obstacles:
+            if self.rect.colliderect(obstacle):
                 if dy > 0:
-                    self.rect.bottom = wall.rect.top
+                    self.rect.bottom = obstacle.top
                 elif dy < 0:
-                    self.rect.top = wall.rect.bottom
+                    self.rect.top = obstacle.bottom
         # Synchronisation monde
         self.posix = self.rect.centerx
         self.posiy = self.rect.centery
@@ -136,3 +139,16 @@ class Player:
             
         return rect
 
+    @property
+    def visual_center_y(self):
+        return self.rect.bottom - self.image.get_height() // 2
+
+    def draw(self, screen, camera_x, camera_y):
+        """Affiche le joueur à la bonne position sur l'écran"""
+        player_rect_screen = self.rect.copy()
+        player_rect_screen.x -= camera_x
+        player_rect_screen.y -= camera_y
+        
+        # On aligne sur les pieds
+        player_image_rect = self.image.get_rect(midbottom=player_rect_screen.midbottom)
+        screen.blit(self.image, player_image_rect)

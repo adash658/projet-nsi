@@ -38,11 +38,11 @@ class Game:
         self.current_player = None
         cx = self.map_width // 2
         cy = self.map_height // 2
-        Luna = NPC("Luna", cx - 200, cy + 50, "assets/luna.png")
-        Gatouz = NPC("Gatouz", cx + 200, cy - 50, "assets/gatouz.png")
-        Wina = NPC("Wina", cx - 150, cy - 200, "assets/wina.png")
-        Spensi = NPC("Spensi", cx + 250, cy + 150, "assets/spensi.png")
-        Kiko = NPC("Kiko", cx, cy + 250, "assets/kiko.png")
+        Luna = NPC("Luna", 1555, 7658, "assets/luna.png")
+        Gatouz = NPC("Gatouz", 1222, 7500, "assets/gatouz.png")
+        Wina = NPC("Wina", 1658, 7575, "assets/wina.png")
+        Spensi = NPC("Spensi", 1575, 7099, "assets/spensi.png")
+        Kiko = NPC("Kiko", 1414, 7658, "assets/kiko.png")
         self.npcs = []
         self.npcs.extend([Luna, Gatouz, Wina, Spensi, Kiko])
         self.sprite_group = pg.sprite.Group()
@@ -185,22 +185,22 @@ class Game:
                     self.player.state = "Idle"
                     self.player.animate()
                 else:
-                    self.player.move(self.collisions)
+                    obstacles_solides = [wall.rect for wall in self.collisions]
+                    for pnj in self.npcs:
+                        obstacles_solides.append(pnj.rect)
 
+                    self.player.move(obstacles_solides)
             self.camera_x = self.player.posix - LARGEUR // 2
-            self.camera_y = self.player.posiy - HAUTEUR // 2
+            self.camera_y = self.player.visual_center_y - HAUTEUR // 2
 
-            player_rect_screen = self.player.rect.copy()
-            player_rect_screen.x -= self.camera_x
-            player_rect_screen.y -= self.camera_y
-            player_image_rect = self.player.image.get_rect(center=player_rect_screen.center)
-            self.screen.blit(self.player.image, player_image_rect)
+            entites_a_dessiner = self.npcs + [self.player]
+            entites_a_dessiner.sort(key=lambda entite: entite.rect.bottom)
+
+            for entite in entites_a_dessiner:
+                entite.draw(self.screen, self.camera_x, self.camera_y)
 
             if self.player.ispaused:
                 self.screen.blit(self.txt_pause, (10, 10))
-
-            for pnj in self.npcs:
-                pnj.draw(self.screen, self.camera_x, self.camera_y)
 
             self.draw_dialogue()
 

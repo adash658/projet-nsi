@@ -12,8 +12,8 @@ class NPC:
 
         self.image = pygame.transform.scale_by(self.image, 4)
 
-        self.rect = pygame.Rect(0, 0, 32, 64) 
-        self.rect.center = (x, y)
+        self.rect = pygame.Rect(0, 0, 48, 16) 
+        self.rect.midbottom = (x, y)
 
         self.portraits = {}
         emotions = ["angry", "happy", "neutral", "sad"]
@@ -26,5 +26,5 @@ class NPC:
                 pass
 
     def draw(self, screen, camera_x, camera_y):
-        image_rect = self.image.get_rect(center=self.rect.center)
+        image_rect = self.image.get_rect(midbottom=self.rect.midbottom)
         screen.blit(self.image, (image_rect.x - camera_x, image_rect.y - camera_y))

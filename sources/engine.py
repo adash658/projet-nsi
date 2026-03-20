@@ -33,7 +33,7 @@ class Game:
         self.rect.center = (self.player.posix, self.player.posiy)
         self.font = pg.font.Font(CHEMIN_POLICE, 30)
         self.font_intro = pg.font.Font(POLICE_INTRO, 30)
-        self.txt_pause = self.font.render("PAUSE", True, BLANC)
+        self.txt_pause = self.font.render("Pause, appuyez sur Echap", True, NOIR)
         self.current_dialogue = None
         self.current_player = None
         cx = self.map_width // 2
@@ -197,23 +197,7 @@ class Game:
             self.screen.blit(self.player.image, player_image_rect)
 
             if self.player.ispaused:
-                stopRect = pg.draw.rect(self.screen, (0, 0, 0), (100, 100, 1000, 600))
-                stopRect_rect = stopRect.get_rect(center=(LARGEUR // 2, HAUTEUR // 2))
-                btnPlay = pg.image.load("assets/Menu/Main Menu/Play_Not-Pressed.png").convert_alpha()
-                button_play = pg.transform.scale_by(btnPlay, 5)
-                playRect = button_play.get_rect(center=((300, 400))
-                btnQuit = pg.image.load("assets/Menu/Main Menu/Quit_Not-Pressed.png").convert_alpha()
-                button_quit = pg.transform.scale_by(btnQuit, 5)
-                quitRect = button_quit.get_rect(center=(700, 400))
-                for event in pg.event.get():
-                    MouseX, MouseY = pg.mouse.get_pos()
-                    if event.type == pg.KEYDOWN:
-                        if playRect.colliderect(MouseX, MouseY):
-                            self.player.ispaused = False
-                        elif quitRect.colliderect(MouseX, MouseY):
-                            self.play = False
-                    self.screen.blit(stopRect, stopRect_rect)
-                    self.screen.blit(self.txt_pause, (LARGEUR // 2, HAUTEUR // 2 - 100))
+                self.screen.blit(self.txt_pause, (10, 10))
 
             for pnj in self.npcs:
                 pnj.draw(self.screen, self.camera_x, self.camera_y)

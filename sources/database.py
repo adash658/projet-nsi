@@ -6,7 +6,7 @@ class Dialogue:
         connexion = sqlite3.connect('sources/dialogues.db')
         cursor = connexion.cursor()
         cursor.execute(
-            "SELECT id, txt, emotion, next_id, choix_a, next_id_a, choix_z, next_id_z "
+            "SELECT id, npc, event, txt, emotion, next_id, choix_a, next_id_a, choix_z, next_id_z "
             "FROM dialogues WHERE npc = ? AND event = ? ORDER BY id ASC LIMIT 1",
             (name, event)
         )
@@ -19,7 +19,7 @@ class Dialogue:
         connexion = sqlite3.connect('sources/dialogues.db')
         cursor = connexion.cursor()
         cursor.execute(
-            "SELECT id, txt, emotion, next_id, choix_a, next_id_a, choix_z, next_id_z "
+            "SELECT id, npc, event, txt, emotion, next_id, choix_a, next_id_a, choix_z, next_id_z "
             "FROM dialogues WHERE id = ?",
             (dialogue_id,)
         )

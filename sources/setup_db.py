@@ -5,7 +5,7 @@ import os
 def importer_donnees():
     # On récupère les chemins absolus pour être sûr de ne pas se tromper
     chemin_script = os.path.abspath(__file__) # Chemin de setup_db.py
-    dossier_sources = os.path.dirname(chemin_script) # Dossier /sources/
+    dossier_sources = os.path.dirname(chemin_script) # Dossier /sources
     dossier_racine = os.path.dirname(dossier_sources) # Dossier racine du projet
 
     chemin_db = os.path.join(dossier_sources, 'dialogues.db')

@@ -131,12 +131,12 @@ class Player:
             points = getattr(wall, 'points', None)
             if points:
                 if self.rect_polygon_collision(self.rect, points):
-                    self.rect.x -= dx  # ← annulation simple, pas de push
+                    self.rect.x -= dx
             else:
                 if dx > 0: self.rect.right = wall_rect.left
                 elif dx < 0: self.rect.left = wall_rect.right
 
-# --- COLLISION Y ---
+    # --- COLLISION Y ---
         self.rect.y += dy
         for wall in obstacles:
             wall_rect = wall.rect if hasattr(wall, 'rect') else wall
@@ -145,7 +145,7 @@ class Player:
             points = getattr(wall, 'points', None)
             if points:
                 if self.rect_polygon_collision(self.rect, points):
-                    self.rect.y -= dy  # ← annulation simple, pas de push
+                    self.rect.y -= dy
             else:
                 if dy > 0: self.rect.bottom = wall_rect.top
                 elif dy < 0: self.rect.top = wall_rect.bottom
@@ -155,17 +155,13 @@ class Player:
         self.animate()
 
     def animate(self):
-        """Fait défiler les images"""
         current_anim = self.animations[self.state][self.direction]
 
-        # On augmente l'index
         self.frame_index += self.anim_speed
 
-        # Si on dépasse le nombre d'images, on revient à 0
         if self.frame_index >= len(current_anim):
             self.frame_index = 0
 
-        # On prend l'image (l'index devient un nombre entier : 0, 1, 2...)
         self.image = current_anim[int(self.frame_index)]
 
     def check_interaction(self, npcs):
@@ -213,4 +209,3 @@ class Player:
             midbottom=(player_rect_screen.centerx, player_rect_screen.bottom - self.draw_offset_y)
         )
         screen.blit(self.image, player_image_rect)
-        pygame.draw.rect(screen, (0, 255, 0), player_rect_screen, 2)

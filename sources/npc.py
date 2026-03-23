@@ -59,12 +59,6 @@ class NPC:
             midbottom=(npc_rect_screen.centerx, npc_rect_screen.bottom - self.draw_offset_y)
             )
         screen.blit(self.image, image_rect)
-        pygame.draw.rect(screen, (255, 0, 0), npc_rect_screen, 2)  # debug, à supprimer
-    # Debug
-        debug_rect = self.rect.copy()
-        debug_rect.x -= camera_x
-        debug_rect.y -= camera_y
-        pygame.draw.rect(screen, (255, 0, 0), debug_rect, 2)  # rouge pour les NPCs
 
     def donner_chemin(self, points):
         self.chemin = points

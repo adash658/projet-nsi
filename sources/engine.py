@@ -45,10 +45,13 @@ class Game:
                         CollisionTile(obj.x * 4, obj.y * 4, obj.width * 4, obj.height * 4, self.collisions)
                         
         self.player = Player(1300, 4500)
+        self.player.direction = "right"
+        self.player.state = "Idle"
+        self.player.image = self.player.animations["Idle"]["right"][0]
         self.rect = pg.Rect(0, 0, 32, 32)
         self.rect.center = (self.player.posix, self.player.posiy)
         
-        Luna = NPC("Luna", 1555, 7658, "IR")
+        Luna = NPC("Luna", 1444, 4499, "IL")
         Gatouz = NPC("Gatouz", 0, 0)
         Wina = NPC("Wina", 0, 0)
         Spensi = NPC("Spensi", 0, 0)
@@ -127,30 +130,47 @@ class Game:
                 if event.type == pg.KEYDOWN:
                     if event.key == pg.K_ESCAPE:
                         self.etat_jeu = ETAT_PAUSE
-                    elif event.key == pg.K_e:
+                    elif event.key in (pg.K_e, pg.K_RETURN): 
                         npc_name = self.player.check_interaction(self.npcs)
                         if npc_name:
                             pnj_cible = next((p for p in self.npcs if p.name == npc_name), None)
                             if pnj_cible and not pnj_cible.chemin:
-                                self.current_speaker_name = npc_name
-                                self.current_speaker_obj = pnj_cible
-                                data = Dialogue.get_premier(npc_name, self.etape_histoire)
-                                if data:
-                                    self.charger_dialogue(data)
-                                    self.etat_jeu = ETAT_DIALOGUE
+
+                                dx = self.player.posix - pnj_cible.rect.centerx
+                                dy = self.player.posiy - pnj_cible.rect.centery
+                                
+                                if abs(dx) > abs(dy):
+                                    etat_voulu = "IR" if dx > 0 else "IL"
+                                else:
+                                    etat_voulu = "ID" if dy > 0 else "IU"
+                                
+                                interaction_autorisee = False
+                                
+                                if len(pnj_cible.animations.get(etat_voulu, [])) > 0:
+                                    pnj_cible.state = etat_voulu
+                                    pnj_cible.current_frame = 0
+                                    pnj_cible.image = pnj_cible.animations[etat_voulu][0]
+                                    interaction_autorisee = True
+                                else:
+                                    if pnj_cible.state[-1] == etat_voulu[-1]:
+                                        interaction_autorisee = True
+                                
+                                if interaction_autorisee:
+                                    self.current_speaker_name = npc_name
+                                    self.current_speaker_obj = pnj_cible
+                                    data = Dialogue.get_premier(npc_name, self.etape_histoire)
+                                    if data:
+                                        self.charger_dialogue(data)
+                                        self.etat_jeu = ETAT_DIALOGUE
 
             elif self.etat_jeu == ETAT_DIALOGUE:
                 if event.type == pg.KEYDOWN:
-                    if event.key == pg.K_e:
-                        self.fermer_dialogue()
-                        self.etat_jeu = ETAT_JEU
-                        
-                    elif event.key == pg.K_RETURN:
+                    if event.key in (pg.K_e, pg.K_RETURN):
                         if not self.en_attente_choix:
                             if self.current_page < len(self.dialogue_pages) - 1:
                                 self.current_page += 1
                             else:
-                                _id, txt, emotion, next_id, choix_a, next_id_a, choix_z, next_id_z = self.current_dialogue_data
+                                _id, speaker, event, txt, emotion, next_id, choix_a, next_id_a, choix_z, next_id_z = self.current_dialogue_data
                                 if choix_a and choix_z:
                                     self.en_attente_choix = True
                                 elif next_id:
@@ -163,11 +183,12 @@ class Game:
                                             p2 = (luna.rect.x + 300, luna.rect.y - 400)
                                             p3 = (luna.rect.x + 600, luna.rect.y - 400)
                                             luna.donner_chemin([p1, p2, p3])
+                                    
                                     self.fermer_dialogue()
                                     self.etat_jeu = ETAT_JEU
 
                     elif event.key == pg.K_a and self.en_attente_choix:
-                        _id, txt, emotion, next_id, choix_a, next_id_a, choix_z, next_id_z = self.current_dialogue_data
+                        _id, speaker, event, txt, emotion, next_id, choix_a, next_id_a, choix_z, next_id_z = self.current_dialogue_data
                         if next_id_a:
                             self.charger_dialogue(Dialogue.get_par_id(next_id_a))
                         else:
@@ -175,7 +196,7 @@ class Game:
                             self.etat_jeu = ETAT_JEU
 
                     elif event.key == pg.K_z and self.en_attente_choix:
-                        _id, txt, emotion, next_id, choix_a, next_id_a, choix_z, next_id_z = self.current_dialogue_data
+                        _id, speaker, event, txt, emotion, next_id, choix_a, next_id_a, choix_z, next_id_z = self.current_dialogue_data
                         if next_id_z:
                             self.charger_dialogue(Dialogue.get_par_id(next_id_z))
                         else:
@@ -320,7 +341,7 @@ class Game:
         if not self.current_dialogue_data:
             return
 
-        _id, txt, emotion, next_id, choix_a, next_id_a, choix_z, next_id_z = self.current_dialogue_data
+        _id, speaker, event, txt, emotion, next_id, choix_a, next_id_a, choix_z, next_id_z = self.current_dialogue_data
 
         box_rect = pg.Rect(200, HAUTEUR - 250, LARGEUR - 400, 200)
         pg.draw.rect(self.screen, (0, 0, 0), box_rect)
@@ -377,9 +398,15 @@ class Game:
         if data is None:
             self.fermer_dialogue()
             return
-        _id, txt, emotion, next_id, choix_a, next_id_a, choix_z, next_id_z = data
+
+        _id, speaker, event, txt, emotion, next_id, choix_a, next_id_a, choix_z, next_id_z = data
+        
         self.current_dialogue_data = data
+        self.current_speaker_name = speaker
         self.current_emotion = emotion
+
+        self.current_speaker_obj = next((p for p in self.npcs if p.name == speaker), None)
+        
         box_rect = pg.Rect(200, HAUTEUR - 250, LARGEUR - 400, 200)
         text_wrap_rect = pg.Rect(box_rect.x + 20, box_rect.y + 50, box_rect.width - 40, box_rect.height - 70)
         self.dialogue_pages = self.calculer_pages(txt, text_wrap_rect, self.font, max_lignes=4)

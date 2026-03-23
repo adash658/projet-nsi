@@ -1,0 +1,13 @@
+Colonne 1,npc,event,txt,emotion,next_id,choix_a,next_id_a,choix_z,next_id_z
+1,Luna,1,Ah t'es enfin reveillé.,neutral,2,,,,
+2,Luna,1,T'as de la chance de pas etre blessé vu comment t'es tombé. J'ai retrouvé ton parapente dans un arbre pas loin mais il est complètement détruit.,neutral,,On est où ? Il s'est passé quoi ?,3,T'es qui toi ?,4
+3,Luna,1,"Ah oui c'est chaud là t'es vraiment perdu. Mais c'est pas grave. Je m'appelle Luna, on est bloqués sur une petite ile.",neutral,6,,,,
+4,Luna,1,Stresse pas.,angry,5,,,,
+5,Luna,1,Je m'appelle Luna,neutral,,,,,
+6,Luna,1,"Suis-moi, je vais te ramener aux autres dans la clairiere.",neutral,,,,,
+7,,,,,,,,,
+8,,,,,,,,,
+9,,,,,,,,,
+10,,,,,,,,,
+11,,,,,,,,,
+12,,,,,,,,,

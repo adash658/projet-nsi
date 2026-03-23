@@ -25,215 +25,276 @@ class Game:
         pg.display.set_caption("Glade")
         self.horloge = pg.time.Clock()
         self.play = True
+        
+        self.etat_jeu = ETAT_MENU
+        
         self.tmx_data = load_pygame("assets/map.tmx")
         self.map_width = self.tmx_data.width * self.tmx_data.tilewidth * 4
         self.map_height = self.tmx_data.height * self.tmx_data.tileheight * 4
-        self.player = Player(1500, 7500)
-        self.rect = pygame.Rect(0, 0, 32, 32)
-        self.rect.center = (self.player.posix, self.player.posiy)
-        self.font = pg.font.Font(CHEMIN_POLICE, 30)
-        self.font_intro = pg.font.Font(POLICE_INTRO, 30)
-        self.txt_pause = self.font.render("Pause, appuyez sur Echap", True, NOIR)
-        self.current_dialogue = None
-        self.current_player = None
-        cx = self.map_width // 2
-        cy = self.map_height // 2
-        Luna = NPC("Luna", 1555, 7658, "assets/luna.png")
-        Gatouz = NPC("Gatouz", 1222, 7500, "assets/gatouz.png")
-        Wina = NPC("Wina", 1658, 7575, "assets/wina.png")
-        Spensi = NPC("Spensi", 1575, 7099, "assets/spensi.png")
-        Kiko = NPC("Kiko", 1414, 7658, "assets/kiko.png")
-        self.npcs = []
-        self.npcs.extend([Luna, Gatouz, Wina, Spensi, Kiko])
-        self.sprite_group = pg.sprite.Group()
-        self.collisions = pg.sprite.Group()
-        self.camera_x = 0
-        self.camera_y = 0
-        self.ecran_titre = pg.image.load("assets/Glade.png").convert()
-        self.ecran_titre = pg.transform.scale(self.ecran_titre, (LARGEUR, HAUTEUR))
-        image_play = pg.image.load("assets/Menu/Main Menu/Play_Not-Pressed.png").convert_alpha()
-        image_play_pressed = pg.image.load("assets/Menu/Main Menu/Play_Pressed.png").convert_alpha()
-        self.play_button = pg.transform.scale_by(image_play, 5)
-        self.play_pressed_button = pg.transform.scale_by(image_play_pressed, 5)
-        self.play_rect = self.play_button.get_rect(midbottom=(LARGEUR // 2, HAUTEUR - 30))
-        self.button_pressed = False
-        self.dialogue_pages = []
-        self.current_page = 0
-
-        self.intro_lines = [
-            "12:34 - AN 56 - 07 AOUT",
-            "",
-            """59° 2?' ??" N, 18° 5?' ??" E""",
-            "",
-            ""
-        ]
-        self.in_intro = True
-        self.intro_start_time = 0
-        self.intro_duration = 5658
-
         self.map_surface = pg.Surface((self.map_width, self.map_height)).convert()
         self.render_map()
-        self.starting = True
+        
+        self.collisions = pg.sprite.Group()
         for layer in self.tmx_data.layers:
             if layer.name == "collision":
                 for obj in layer:
-                    CollisionTile(
-                        obj.x * 4,
-                        obj.y * 4,
-                        obj.width * 4,
-                        obj.height * 4,
-                        self.collisions,
-                    )
+                    CollisionTile(obj.x * 4, obj.y * 4, obj.width * 4, obj.height * 4, self.collisions)
+
+        self.player = Player(1500, 7500)
+        self.rect = pg.Rect(0, 0, 32, 32)
+        self.rect.center = (self.player.posix, self.player.posiy)
+        
+        Luna = NPC("Luna", 1555, 7658, "IR")
+        Gatouz = NPC("Gatouz", 0, 0)
+        Wina = NPC("Wina", 0, 0)
+        Spensi = NPC("Spensi", 0, 0)
+        Kiko = NPC("Kiko", 0, 0)
+        self.npcs = [Luna, Gatouz, Wina, Spensi, Kiko]
+        
+        self.camera_x = 0
+        self.camera_y = 0
+        
+        self.font = pg.font.Font(CHEMIN_POLICE, 30)
+        self.font_intro = pg.font.Font(POLICE_INTRO, 30)
+        self.txt_pause = self.font.render("Pause, appuyez sur Echap", True, NOIR)
+        
+        self.ecran_titre = pg.transform.scale(pg.image.load("assets/Glade.png").convert(), (LARGEUR, HAUTEUR))
+        self.play_button = pg.transform.scale_by(pg.image.load("assets/Menu/Main Menu/Play_Not-Pressed.png").convert_alpha(), 5)
+        self.play_pressed_button = pg.transform.scale_by(pg.image.load("assets/Menu/Main Menu/Play_Pressed.png").convert_alpha(), 5)
+        self.play_rect = self.play_button.get_rect(midbottom=(LARGEUR // 2, HAUTEUR - 30))
+        self.button_pressed = False
+        
+        self.intro_lines = ["12:34 - AN 56 - 07 AOUT", "", """59° 2?' ??" N, 18° 5?' ??" E""", "", ""]
+        self.intro_start_time = 0
+        self.intro_duration = 5658
+        
+        self.current_dialogue_data = None  
+        self.current_speaker_name = None
+        self.current_speaker_obj = None
+        self.current_emotion = None
+        self.dialogue_pages = []
+        self.current_page = 0
+        self.en_attente_choix = False
+        
+        self.etape_histoire = 1
+        self.scene_actuelle = None
+        self.etape_scene = 0
+        self.zone_clairiere = None
+        
+        self.fondu_alpha = 255
+        self.fondu_surface = pg.Surface((LARGEUR, HAUTEUR))
+        self.fondu_surface.fill((0, 0, 0))
+        self.fondu_sens = -1 
+        self.fondu_duree = 1500
+        self.fondu_start = None
 
     def run(self):
         while self.play:
-            while self.starting:
-
-                self.screen.blit(self.ecran_titre, (0, 0))
-                
-                if self.button_pressed:
-                    self.screen.blit(self.play_pressed_button, self.play_rect)
-                else:
-                    self.screen.blit(self.play_button, self.play_rect)
-
-                pg.display.flip()
-
-                for event in pg.event.get():
-                    if event.type == pg.QUIT:
-                        self.play = False
-                        self.starting = False
-                    
-                    elif event.type == pg.KEYDOWN:
-                        if event.key == pg.K_RETURN:
-                            self.starting = False
-                            
-                    elif event.type == pg.MOUSEBUTTONDOWN:
-                        if event.button == 1 and self.play_rect.collidepoint(event.pos):
-                            self.button_pressed = True
-                            
-                    elif event.type == pg.MOUSEBUTTONUP:
-                        if event.button == 1 and self.button_pressed:
-                            self.starting = False
-                        self.button_pressed = False
-
-                self.intro_start_time = pg.time.get_ticks()
-                
-            while self.in_intro and self.play:
-                self.update_intro()
-
-            self.screen.fill(BLANC)
-            self.screen.blit(
-                self.map_surface,
-                (-self.camera_x, -self.camera_y)
-                )
-            for event in pg.event.get():
-                if event.type == pg.QUIT:
-                    self.play = False
-                if event.type == pg.KEYDOWN:
-                    
-                    if event.key == pg.K_ESCAPE:
-                        if self.player.ispaused == False:
-                            self.player.lock()
-                        else:
-                            self.player.unlock()
-
-                    if event.key == pg.K_e:
-                        if self.current_dialogue:
-                            # 1. Le dialogue est ouvert : E permet de le quitter de force
-                            self.current_dialogue = None
-                            self.current_speaker_name = None
-                            self.current_speaker_obj = None
-                            self.current_emotion = None
-                            self.dialogue_pages = []
-
-                        else:
-                            npc_name = self.player.check_interaction(self.npcs)
-                            if npc_name:
-                                if self.current_dialogue:
-                                    self.current_dialogue = None
-                                    self.current_speaker_name = None
-                                    self.current_speaker_obj = None
-                                    self.current_emotion = None
-                                else:
-                                    phrase, emotion = Dialogue.dialogue(npc_name, 1)
-                                    self.current_dialogue = phrase
-                                    self.current_speaker_name = npc_name
-                                    self.current_emotion = emotion
-                                    for pnj in self.npcs:
-                                        if pnj.name == npc_name:
-                                            self.current_speaker_obj = pnj
-                                            break
-                                    box_rect = pg.Rect(200, HAUTEUR - 250, LARGEUR - 400, 200)
-                                    text_wrap_rect = pg.Rect(box_rect.x + 20, box_rect.y + 50, box_rect.width - 40, box_rect.height - 70)
-                                    self.dialogue_pages = self.calculer_pages(phrase, text_wrap_rect, self.font, max_lignes=4)
-                                    self.current_page = 0
-                            else:
-                                self.current_dialogue = None
-                    if event.key == pg.K_RETURN:
-                        if self.current_dialogue:
-                            if self.current_page < len(self.dialogue_pages) - 1:
-                                self.current_page += 1
-                            else:
-                                self.current_dialogue = None
-                                self.current_speaker_name = None
-                                self.current_speaker_obj = None
-                                self.current_emotion = None
-                                self.dialogue_pages = []
-
-            if not self.player.ispaused:
-                if self.current_dialogue:
-                    self.player.state = "Idle"
-                    self.player.animate()
-                else:
-                    obstacles_solides = [wall.rect for wall in self.collisions]
-                    for pnj in self.npcs:
-                        obstacles_solides.append(pnj.rect)
-
-                    self.player.move(obstacles_solides)
-            self.camera_x = self.player.posix - LARGEUR // 2
-            self.camera_y = self.player.visual_center_y - HAUTEUR // 2
-
-            entites_a_dessiner = self.npcs + [self.player]
-            entites_a_dessiner.sort(key=lambda entite: entite.rect.bottom)
-
-            for entite in entites_a_dessiner:
-                entite.draw(self.screen, self.camera_x, self.camera_y)
-
-            if self.player.ispaused:
-                self.screen.blit(self.txt_pause, (10, 10))
-
-            self.draw_dialogue()
-
-            pg.display.flip()
             self.horloge.tick(FPS)
-
+            self.gerer_evenements()
+            self.mettre_a_jour()
+            self.dessiner()
         pg.quit()
 
-    def update_intro(self):
+    def gerer_evenements(self):
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 self.play = False
-                self.in_intro = False
-            keys = pg.key.get_pressed()
-            if keys[pg.K_a] and keys[pg.K_z] and keys[pg.K_e]:
-                self.in_intro = False
 
-        current_time = pg.time.get_ticks()
-        
-        if current_time - self.intro_start_time > self.intro_duration:
-            self.in_intro = False
-            return
+            if self.etat_jeu == ETAT_MENU:
+                if event.type == pg.KEYDOWN and event.key == pg.K_RETURN:
+                    self.etat_jeu = ETAT_INTRO
+                    self.intro_start_time = pg.time.get_ticks()
+                elif event.type == pg.MOUSEBUTTONDOWN and event.button == 1 and self.play_rect.collidepoint(event.pos):
+                    self.button_pressed = True
+                elif event.type == pg.MOUSEBUTTONUP and event.button == 1 and self.button_pressed:
+                    self.etat_jeu = ETAT_INTRO
+                    self.intro_start_time = pg.time.get_ticks()
+                    self.button_pressed = False
 
-        self.screen.fill((0, 0, 0))
-        
-        hauteur_ligne = 40
-        hauteur_totale = len(self.intro_lines) * hauteur_ligne
-        start_y = (HAUTEUR - hauteur_totale) // 2 
+            elif self.etat_jeu == ETAT_INTRO:
+                keys = pg.key.get_pressed()
+                if keys[pg.K_a] and keys[pg.K_z] and keys[pg.K_e]:
+                    self.etat_jeu = ETAT_JEU
+                    self.fondu_duree = 3658
+                    self.fondu_start = pg.time.get_ticks()
 
-        for i, phrase in enumerate(self.intro_lines):
-            text_surf = self.font_intro.render(phrase, True, (255, 255, 255))
-            text_rect = text_surf.get_rect(center=(LARGEUR // 2, start_y + i * hauteur_ligne))
-            self.screen.blit(text_surf, text_rect)
+            elif self.etat_jeu == ETAT_JEU:
+                if event.type == pg.KEYDOWN:
+                    if event.key == pg.K_ESCAPE:
+                        self.etat_jeu = ETAT_PAUSE
+                    elif event.key == pg.K_e:
+                        npc_name = self.player.check_interaction(self.npcs)
+                        if npc_name:
+                            pnj_cible = next((p for p in self.npcs if p.name == npc_name), None)
+                            if pnj_cible and not pnj_cible.chemin:
+                                self.current_speaker_name = npc_name
+                                self.current_speaker_obj = pnj_cible
+                                data = Dialogue.get_premier(npc_name, self.etape_histoire)
+                                if data:
+                                    self.charger_dialogue(data)
+                                    self.etat_jeu = ETAT_DIALOGUE
+
+            elif self.etat_jeu == ETAT_DIALOGUE:
+                if event.type == pg.KEYDOWN:
+                    if event.key == pg.K_e:
+                        self.fermer_dialogue()
+                        self.etat_jeu = ETAT_JEU
+                        
+                    elif event.key == pg.K_RETURN:
+                        if not self.en_attente_choix:
+                            if self.current_page < len(self.dialogue_pages) - 1:
+                                self.current_page += 1
+                            else:
+                                _id, txt, emotion, next_id, choix_a, next_id_a, choix_z, next_id_z = self.current_dialogue_data
+                                if choix_a and choix_z:
+                                    self.en_attente_choix = True
+                                elif next_id:
+                                    self.charger_dialogue(Dialogue.get_par_id(next_id))
+                                else:
+                                    if self.etape_histoire == 1 and self.current_speaker_name == "Luna":
+                                        luna = next((p for p in self.npcs if p.name == "Luna"), None)
+                                        if luna:
+                                            p1 = (luna.rect.x + 300, luna.rect.y)
+                                            p2 = (luna.rect.x + 300, luna.rect.y - 400)
+                                            p3 = (luna.rect.x + 600, luna.rect.y - 400)
+                                            luna.donner_chemin([p1, p2, p3])
+                                    self.fermer_dialogue()
+                                    self.etat_jeu = ETAT_JEU
+
+                    elif event.key == pg.K_a and self.en_attente_choix:
+                        _id, txt, emotion, next_id, choix_a, next_id_a, choix_z, next_id_z = self.current_dialogue_data
+                        if next_id_a:
+                            self.charger_dialogue(Dialogue.get_par_id(next_id_a))
+                        else:
+                            self.fermer_dialogue()
+                            self.etat_jeu = ETAT_JEU
+
+                    elif event.key == pg.K_z and self.en_attente_choix:
+                        _id, txt, emotion, next_id, choix_a, next_id_a, choix_z, next_id_z = self.current_dialogue_data
+                        if next_id_z:
+                            self.charger_dialogue(Dialogue.get_par_id(next_id_z))
+                        else:
+                            self.fermer_dialogue()
+                            self.etat_jeu = ETAT_JEU
+
+            elif self.etat_jeu == ETAT_PAUSE:
+                if event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
+                    self.etat_jeu = ETAT_JEU
+
+    def mettre_a_jour(self):
+        if self.etat_jeu == ETAT_INTRO:
+            if pg.time.get_ticks() - self.intro_start_time > self.intro_duration:
+                self.etat_jeu = ETAT_JEU
+                self.fondu_start = pg.time.get_ticks()
+
+        elif self.etat_jeu in (ETAT_JEU, ETAT_CINEMATIQUE):
+            for pnj in self.npcs:
+                if pnj.chemin:
+                    if pnj.suivre_chemin():
+                        if pnj.name == "Luna" and self.etape_histoire == 1:
+                            pnj.chemin = []
+                            pnj.state = "IR"
+                            self.zone_clairiere = pg.Rect(pnj.rect.x - 200, pnj.rect.y - 200, 400, 400)
+                pnj.animate()
+
+            if self.etat_jeu == ETAT_JEU:
+                obstacles = [wall.rect for wall in self.collisions] + [pnj.rect for pnj in self.npcs]
+                self.player.move(obstacles)
+                
+                if self.etape_histoire == 1 and self.zone_clairiere:
+                    if self.player.rect.colliderect(self.zone_clairiere):
+                        self.etat_jeu = ETAT_CINEMATIQUE
+                        self.scene_actuelle = "CLAIRIERE"
+                        self.etape_scene = 0
+                        self.fondu_duree = 1500
+                        self.fondu_start = pg.time.get_ticks()
+                        self.fondu_sens = 1
+                        self.player.state = "Idle"
+            
+            self.camera_x = self.player.posix - LARGEUR // 2
+            self.camera_y = self.player.visual_center_y - HAUTEUR // 2
+
+        if self.etat_jeu == ETAT_CINEMATIQUE:
+            self.jouer_scene()
+
+    def jouer_scene(self):
+        if self.scene_actuelle == "CLAIRIERE":
+            if self.fondu_start is not None:
+                elapsed = pg.time.get_ticks() - self.fondu_start
+                progression = min(1.0, elapsed / self.fondu_duree)
+                
+                if self.fondu_sens == 1: 
+                    self.fondu_alpha = int(progression * 255)
+                    if progression >= 1.0:
+                        luna = next((p for p in self.npcs if p.name == "Luna"), None)
+                        cx, cy = luna.rect.x + 150, luna.rect.y
+                        for p in self.npcs:
+                            if p.name == "Gatouz": p.rect.midbottom = (cx, cy - 100)
+                            elif p.name == "Wina": p.rect.midbottom = (cx + 100, cy - 40)
+                            elif p.name == "Spensi": p.rect.midbottom = (cx + 80, cy + 80)
+                            elif p.name == "Kiko": p.rect.midbottom = (cx - 100, cy - 40)
+                        
+                        self.player.rect.midbottom = (cx - 80, cy + 80)
+                        self.player.posix, self.player.posiy = self.player.rect.center
+                        self.player.direction = "right"
+                        self.player.animate()
+                        
+                        # On lance le dialogue
+                        self.etape_histoire = 2
+                        self.current_speaker_name = "Gatouz"
+                        self.current_speaker_obj = next((p for p in self.npcs if p.name == "Gatouz"), None)
+                        
+                        data = Dialogue.get_premier("Gatouz", self.etape_histoire) 
+                        self.charger_dialogue(data)
+                        
+                        self.fondu_sens = -1
+                        self.fondu_start = pg.time.get_ticks()
+                        
+                elif self.fondu_sens == -1:
+                    self.fondu_alpha = max(0, 255 - int(progression * 255))
+                    if progression >= 1.0:
+                        self.fondu_start = None
+                        self.scene_actuelle = None
+                        self.etat_jeu = ETAT_DIALOGUE
+
+    def dessiner(self):
+        if self.etat_jeu == ETAT_MENU:
+            self.screen.blit(self.ecran_titre, (0, 0))
+            if self.button_pressed:
+                self.screen.blit(self.play_pressed_button, self.play_rect)
+            else:
+                self.screen.blit(self.play_button, self.play_rect)
+
+        elif self.etat_jeu == ETAT_INTRO:
+            self.screen.fill((0, 0, 0))
+            hauteur_ligne = 40
+            start_y = (HAUTEUR - len(self.intro_lines) * hauteur_ligne) // 2 
+            for i, phrase in enumerate(self.intro_lines):
+                text_surf = self.font_intro.render(phrase, True, (255, 255, 255))
+                self.screen.blit(text_surf, text_surf.get_rect(center=(LARGEUR // 2, start_y + i * hauteur_ligne)))
+
+        elif self.etat_jeu in (ETAT_JEU, ETAT_DIALOGUE, ETAT_CINEMATIQUE, ETAT_PAUSE):
+            self.screen.fill(BLANC)
+            self.screen.blit(self.map_surface, (-self.camera_x, -self.camera_y))
+            
+            entites_a_dessiner = self.npcs + [self.player]
+            entites_a_dessiner.sort(key=lambda entite: entite.rect.bottom)
+            for entite in entites_a_dessiner:
+                entite.draw(self.screen, self.camera_x, self.camera_y)
+
+            if self.etat_jeu == ETAT_PAUSE:
+                self.screen.blit(self.txt_pause, (10, 10))
+
+            if self.etat_jeu == ETAT_DIALOGUE:
+                self.draw_dialogue()
+
+            if self.fondu_alpha > 0 and self.fondu_start is not None:
+                if self.etat_jeu == ETAT_JEU and self.fondu_sens == -1:
+                    elapsed = pg.time.get_ticks() - self.fondu_start
+                    self.fondu_alpha = max(0, 255 - int((elapsed / self.fondu_duree) * 255))
+                self.fondu_surface.set_alpha(self.fondu_alpha)
+                self.screen.blit(self.fondu_surface, (0, 0))
 
         pg.display.flip()
 
@@ -243,7 +304,7 @@ class Game:
             if hasattr(layer, "tiles"):
                 for x, y, image in layer.tiles():
                     if image not in scaled_cache:
-                        scaled_cache[image] = pg.transform.scale_by(image, 4)
+                        scaled_cache[image] = pg.transform.scale_by(image,4)
                     scaled_image = scaled_cache[image]
                     self.map_surface.blit(
                         scaled_image,
@@ -252,32 +313,41 @@ class Game:
                     )
 
     def draw_dialogue(self):
-        if self.current_dialogue:
-            box_rect = pg.Rect(200, HAUTEUR - 250, LARGEUR - 400, 200)
-            pg.draw.rect(self.screen, (0, 0, 0), box_rect)
-            pg.draw.rect(self.screen, (255, 255, 255), box_rect, 5)
+        if not self.current_dialogue_data:
+            return
 
-            if self.current_emotion and self.current_speaker_obj and self.current_emotion in self.current_speaker_obj.portraits:
-                image_brute = self.current_speaker_obj.portraits[self.current_emotion]
-                portrait = preparer_portrait(image_brute, 256, 10)
-                self.screen.blit(portrait, (box_rect.x, box_rect.y - 256))
+        _id, txt, emotion, next_id, choix_a, next_id_a, choix_z, next_id_z = self.current_dialogue_data
 
-            couleur_nom = COULEURS_PNJ.get(self.current_speaker_name, (255, 255, 0))
-            nom_surface = self.font.render(self.current_speaker_name, True, couleur_nom)
-            self.screen.blit(nom_surface, (box_rect.x + 20, box_rect.y + 10))
+        box_rect = pg.Rect(200, HAUTEUR - 250, LARGEUR - 400, 200)
+        pg.draw.rect(self.screen, (0, 0, 0), box_rect)
+        pg.draw.rect(self.screen, (255, 255, 255), box_rect, 5)
 
-            text_wrap_rect = pg.Rect(box_rect.x + 20, box_rect.y + 50, box_rect.width - 40, box_rect.height - 70)
+        if self.current_emotion and self.current_speaker_obj and self.current_emotion in self.current_speaker_obj.portraits:
+            image_brute = self.current_speaker_obj.portraits[self.current_emotion]
+            portrait = preparer_portrait(image_brute, 256, 10)
+            self.screen.blit(portrait, (box_rect.x, box_rect.y - 256))
 
-            if hasattr(self, 'dialogue_pages') and self.dialogue_pages:
-                lignes_a_afficher = self.dialogue_pages[self.current_page]
-                
-                for i, ligne in enumerate(lignes_a_afficher):
-                    texte_surface = self.font.render(ligne, True, (255, 255, 255))
-                    self.screen.blit(texte_surface, (text_wrap_rect.x, text_wrap_rect.y + (i * 35)))
-                
-                if self.current_page < len(self.dialogue_pages) - 1:
-                    triangle_surf = self.font_intro.render("▼", True, (255, 255, 0))
-                    self.screen.blit(triangle_surf, (box_rect.right - 30, box_rect.bottom - 40))
+        couleur_nom = COULEURS_PNJ.get(self.current_speaker_name, (255, 255, 0))
+        nom_surface = self.font.render(self.current_speaker_name, True, couleur_nom)
+        self.screen.blit(nom_surface, (box_rect.x + 20, box_rect.y + 10))
+
+        text_wrap_rect = pg.Rect(box_rect.x + 20, box_rect.y + 50, box_rect.width - 40, box_rect.height - 70)
+
+        if self.en_attente_choix:
+            surf_a = self.font.render(f"[A]  {choix_a}", True, (173,200,222))
+            surf_z = self.font.render(f"[Z]  {choix_z}", True, (180, 220, 255))
+            self.screen.blit(surf_a, (text_wrap_rect.x, text_wrap_rect.y))
+            self.screen.blit(surf_z, (text_wrap_rect.x, text_wrap_rect.y + 45))
+        elif self.dialogue_pages:
+            for i, ligne in enumerate(self.dialogue_pages[self.current_page]):
+                texte_surface = self.font.render(ligne, True, (255, 255, 255))
+                self.screen.blit(texte_surface, (text_wrap_rect.x, text_wrap_rect.y + (i * 35)))
+            if self.current_page < len(self.dialogue_pages) - 1:
+                triangle_surf = self.font_intro.render("▼", True, (255, 255, 0))
+                self.screen.blit(triangle_surf, (box_rect.right - 30, box_rect.bottom - 40))
+            elif not (choix_a and choix_z):
+                triangle_surf = self.font_intro.render("▶", True, (200, 200, 200))
+                self.screen.blit(triangle_surf, (box_rect.right - 30, box_rect.bottom - 40))
 
     def calculer_pages(self, text, rect, font, max_lignes=4):
         mots = text.split(' ')
@@ -298,3 +368,26 @@ class Game:
             pages.append(lignes[i:i + max_lignes])
             
         return pages
+
+    def charger_dialogue(self, data):
+        if data is None:
+            self.fermer_dialogue()
+            return
+        _id, txt, emotion, next_id, choix_a, next_id_a, choix_z, next_id_z = data
+        self.current_dialogue_data = data
+        self.current_emotion = emotion
+        box_rect = pg.Rect(200, HAUTEUR - 250, LARGEUR - 400, 200)
+        text_wrap_rect = pg.Rect(box_rect.x + 20, box_rect.y + 50, box_rect.width - 40, box_rect.height - 70)
+        self.dialogue_pages = self.calculer_pages(txt, text_wrap_rect, self.font, max_lignes=4)
+        self.current_page = 0
+        self.en_attente_choix = False
+
+    def fermer_dialogue(self):
+        self.current_dialogue_data = None
+        self.current_speaker_name = None
+        self.current_speaker_obj = None
+        self.current_emotion = None
+        self.dialogue_pages = []
+        self.current_page = 0
+        self.en_attente_choix = False
+        self.player.unlock()

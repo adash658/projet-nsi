@@ -20,3 +20,11 @@ COULEURS_PNJ = {
     "Kiko": (99, 250, 99), 
     "Le Joueur": (200, 220, 222)
 }
+
+# Etats
+ETAT_MENU = 0
+ETAT_INTRO = 1
+ETAT_JEU = 2
+ETAT_DIALOGUE = 3
+ETAT_CINEMATIQUE = 4
+ETAT_PAUSE = 5

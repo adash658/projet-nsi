@@ -22,7 +22,8 @@ class Player:
 
         self.image = self.animations["Idle"]["down"][0]
         self.rect = pygame.Rect(0, 0, 48, 16) 
-        self.rect.center = (x, y)
+        self.rect.midbottom = (x, y)
+        self.draw_offset_y = -76
 
     def load_images(self):
         direction_map = {"down": "D", "left": "L", "right": "R", "up": "U"}
@@ -44,6 +45,56 @@ class Player:
                     frames.append(pygame.transform.scale_by(img, self.scale_factor))
             self.animations["Walk"][direction] = frames
 
+    def point_in_polygon(self, point, polygon):
+        x, y = point
+        inside = False
+        j = len(polygon) - 1
+        for i in range(len(polygon)):
+            xi, yi = polygon[i]
+            xj, yj = polygon[j]
+            if ((yi > y) != (yj > y)) and \
+                (x < (xj - xi) * (y - yi) / (yj - yi + 0.00001) + xi):
+                    inside = not inside
+            j = i
+        return inside
+
+    def segments_intersect(self, p1, p2, p3, p4):
+        def cross(o, a, b):
+            return (a[0]-o[0])*(b[1]-o[1]) - (a[1]-o[1])*(b[0]-o[0])
+        d1 = cross(p3, p4, p1)
+        d2 = cross(p3, p4, p2)
+        d3 = cross(p1, p2, p3)
+        d4 = cross(p1, p2, p4)
+        if ((d1 > 0 and d2 < 0) or (d1 < 0 and d2 > 0)) and \
+        ((d3 > 0 and d4 < 0) or (d3 < 0 and d4 > 0)):
+            return True
+        return False
+
+    def rect_polygon_collision(self, rect, polygon):
+    # Cas 1 : un coin du rect est dans le polygone
+        for p in [rect.topleft, rect.topright, rect.bottomright, rect.bottomleft]:
+            if self.point_in_polygon(p, polygon):
+                return True
+    # Cas 2 : un sommet du polygone est dans le rect
+        for p in polygon:
+            if rect.collidepoint(p):
+                return True
+    # Cas 3 (manquant !) : une arête du polygone croise une arête du rect
+        rect_edges = [
+            (rect.topleft,     rect.topright),
+            (rect.topright,    rect.bottomright),
+            (rect.bottomright, rect.bottomleft),
+            (rect.bottomleft,  rect.topleft),
+            ]
+        n = len(polygon)
+        for i in range(n):
+            arete_poly = (polygon[i], polygon[(i + 1) % n])
+            for arete_rect in rect_edges:
+                if self.segments_intersect(*arete_poly, *arete_rect):
+                    return True
+        return False
+       
+    
     def move(self, obstacles):
         if self.ispaused:
             return
@@ -71,26 +122,36 @@ class Player:
 
         self.state = "Walk" if moving else "Idle"
 
-        # --- COLLISION X ---
+    # --- COLLISION X ---
         self.rect.x += dx
-        for obstacle in obstacles:
-            if self.rect.colliderect(obstacle):
-                if dx > 0:
-                    self.rect.right = obstacle.left
-                elif dx < 0:
-                    self.rect.left = obstacle.right
-        # --- COLLISION Y ---
+        for wall in obstacles:
+            wall_rect = wall.rect if hasattr(wall, 'rect') else wall
+            if not self.rect.colliderect(wall_rect):
+                continue
+            points = getattr(wall, 'points', None)
+            if points:
+                if self.rect_polygon_collision(self.rect, points):
+                    self.rect.x -= dx  # ← annulation simple, pas de push
+            else:
+                if dx > 0: self.rect.right = wall_rect.left
+                elif dx < 0: self.rect.left = wall_rect.right
+
+# --- COLLISION Y ---
         self.rect.y += dy
-        for obstacle in obstacles:
-            if self.rect.colliderect(obstacle):
-                if dy > 0:
-                    self.rect.bottom = obstacle.top
-                elif dy < 0:
-                    self.rect.top = obstacle.bottom
-        # Synchronisation monde
+        for wall in obstacles:
+            wall_rect = wall.rect if hasattr(wall, 'rect') else wall
+            if not self.rect.colliderect(wall_rect):
+                continue
+            points = getattr(wall, 'points', None)
+            if points:
+                if self.rect_polygon_collision(self.rect, points):
+                    self.rect.y -= dy  # ← annulation simple, pas de push
+            else:
+                if dy > 0: self.rect.bottom = wall_rect.top
+                elif dy < 0: self.rect.top = wall_rect.bottom
+
         self.posix = self.rect.centerx
         self.posiy = self.rect.centery
-
         self.animate()
 
     def animate(self):
@@ -144,11 +205,12 @@ class Player:
         return self.rect.bottom - self.image.get_height() // 2
 
     def draw(self, screen, camera_x, camera_y):
-        """Affiche le joueur à la bonne position sur l'écran"""
         player_rect_screen = self.rect.copy()
         player_rect_screen.x -= camera_x
         player_rect_screen.y -= camera_y
-        
-        # On aligne sur les pieds
-        player_image_rect = self.image.get_rect(midbottom=player_rect_screen.midbottom)
+
+        player_image_rect = self.image.get_rect(
+            midbottom=(player_rect_screen.centerx, player_rect_screen.bottom - self.draw_offset_y)
+        )
         screen.blit(self.image, player_image_rect)
+        pygame.draw.rect(screen, (0, 255, 0), player_rect_screen, 2)

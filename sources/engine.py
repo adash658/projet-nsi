@@ -3,7 +3,7 @@ from sources.constants import *
 from sources.player import *
 from sources.npc import NPC
 from pytmx.util_pygame import load_pygame
-from sources.tile import Tile, CollisionTile
+from sources.Tile import Tile, CollisionTile, PolygonCollisionTile
 from sources.database import Dialogue
 
 def preparer_portrait(image_brute, hauteur_finale, epaisseur_bordure):
@@ -38,9 +38,13 @@ class Game:
         for layer in self.tmx_data.layers:
             if layer.name == "collision":
                 for obj in layer:
-                    CollisionTile(obj.x * 4, obj.y * 4, obj.width * 4, obj.height * 4, self.collisions)
-
-        self.player = Player(1500, 7500)
+                    if hasattr(obj, 'points') and obj.points:
+                        points_absolus = [(p[0] * 4, p[1] * 4) for p in obj.points]
+                        PolygonCollisionTile(points_absolus, self.collisions)
+                    else:
+                        CollisionTile(obj.x * 4, obj.y * 4, obj.width * 4, obj.height * 4, self.collisions)
+                        
+        self.player = Player(1300, 4500)
         self.rect = pg.Rect(0, 0, 32, 32)
         self.rect.center = (self.player.posix, self.player.posiy)
         
@@ -199,7 +203,7 @@ class Game:
                 pnj.animate()
 
             if self.etat_jeu == ETAT_JEU:
-                obstacles = [wall.rect for wall in self.collisions] + [pnj.rect for pnj in self.npcs]
+                obstacles = list(self.collisions) + [pnj.rect for pnj in self.npcs]
                 self.player.move(obstacles)
                 
                 if self.etape_histoire == 1 and self.zone_clairiere:

@@ -6,7 +6,7 @@ class Player:
     def __init__(self, x, y):
         self.posix = x
         self.posiy = y
-        self.speed = 3
+        self.speed = 4
         self.ispaused = False
 
         self.base_w, self.base_h = 48, 64

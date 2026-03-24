@@ -47,7 +47,7 @@ class NPC:
             self.image.fill((255, 0, 255)) 
 
         self.chemin = []
-        self.vitesse = 2.6
+        self.vitesse = 4.2
         self.draw_offset_y = -76
         
     def draw(self, screen, camera_x, camera_y):

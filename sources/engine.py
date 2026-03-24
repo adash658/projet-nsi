@@ -7,7 +7,6 @@ from sources.Tile import Tile, CollisionTile, PolygonCollisionTile
 from sources.database import Dialogue
 
 def preparer_portrait(image_brute, hauteur_finale, epaisseur_bordure):
-
     largeur_origine, hauteur_origine = image_brute.get_size()
     cote_carre = min(largeur_origine, hauteur_origine)
     x_crop = (largeur_origine - cote_carre) // 2
@@ -27,6 +26,8 @@ class Game:
         self.play = True
         
         self.etat_jeu = ETAT_MENU
+
+        self.etape_histoire = 1 
         
         self.tmx_data = load_pygame("assets/map.tmx")
         self.map_width = self.tmx_data.width * self.tmx_data.tilewidth * 4
@@ -44,14 +45,14 @@ class Game:
                     else:
                         CollisionTile(obj.x * 4, obj.y * 4, obj.width * 4, obj.height * 4, self.collisions)
                         
-        self.player = Player(1300, 4500)
+        self.player = Player(1167, 4404)
         self.player.direction = "right"
         self.player.state = "Idle"
         self.player.image = self.player.animations["Idle"]["right"][0]
         self.rect = pg.Rect(0, 0, 32, 32)
         self.rect.center = (self.player.posix, self.player.posiy)
         
-        Luna = NPC("Luna", 1444, 4499, "IL")
+        Luna = NPC("Luna", 1250, 4404, "IL")
         Gatouz = NPC("Gatouz", 0, 0)
         Wina = NPC("Wina", 0, 0)
         Spensi = NPC("Spensi", 0, 0)
@@ -83,11 +84,10 @@ class Game:
         self.current_page = 0
         self.en_attente_choix = False
         
-        self.etape_histoire = 1
-        self.scene_actuelle = None
-        self.etape_scene = 0
+        self.scene_actuelle = "A" 
         self.zone_clairiere = None
-        
+        self.zone_plage = pg.Rect(5849, 3744, 100, 100) # La zone pour lancer la scène C
+              
         self.fondu_alpha = 255
         self.fondu_surface = pg.Surface((LARGEUR, HAUTEUR))
         self.fondu_surface.fill((0, 0, 0))
@@ -127,15 +127,31 @@ class Game:
                     self.fondu_start = pg.time.get_ticks()
 
             elif self.etat_jeu == ETAT_JEU:
+                if event.type == pg.MOUSEBUTTONDOWN:
+                    if event.button == 3:
+                        mouse_x, mouse_y = pg.mouse.get_pos()
+                        vrai_x = mouse_x + self.camera_x
+                        vrai_y = mouse_y + self.camera_y
+                        print(f"Curseur Map : x={vrai_x}, y={vrai_y}")
                 if event.type == pg.KEYDOWN:
-                    if event.key == pg.K_ESCAPE:
+                    keys = pg.key.get_pressed()
+                    if keys[pg.K_a] and keys[pg.K_z] and keys[pg.K_e] and self.etape_histoire == 1:
+                        self.etat_jeu = ETAT_CINEMATIQUE
+                        self.scene_actuelle = "TRANS_A_B"
+                        self.fondu_sens = 1
+                        self.fondu_start = pg.time.get_ticks()
+                        self.fondu_duree = 1500
+                        self.player.state = "Idle"
+                        print("Debug : Skip vers la Clairière (Scène 2)")
+                    elif event.key == pg.K_ESCAPE:
                         self.etat_jeu = ETAT_PAUSE
+                    elif event.key == pg.K_p:
+                        print(f"Position Joueur : x={self.player.rect.centerx}, y={self.player.rect.centery}")
                     elif event.key in (pg.K_e, pg.K_RETURN): 
                         npc_name = self.player.check_interaction(self.npcs)
                         if npc_name:
                             pnj_cible = next((p for p in self.npcs if p.name == npc_name), None)
                             if pnj_cible and not pnj_cible.chemin:
-
                                 dx = self.player.posix - pnj_cible.rect.centerx
                                 dy = self.player.posiy - pnj_cible.rect.centery
                                 
@@ -162,7 +178,7 @@ class Game:
                                     if data:
                                         self.charger_dialogue(data)
                                         self.etat_jeu = ETAT_DIALOGUE
-
+                                        
             elif self.etat_jeu == ETAT_DIALOGUE:
                 if event.type == pg.KEYDOWN:
                     if event.key in (pg.K_e, pg.K_RETURN):
@@ -170,25 +186,37 @@ class Game:
                             if self.current_page < len(self.dialogue_pages) - 1:
                                 self.current_page += 1
                             else:
-                                _id, speaker, event, txt, emotion, next_id, choix_a, next_id_a, choix_z, next_id_z = self.current_dialogue_data
+                                _id, speaker, event_str, txt, emotion, next_id, choix_a, next_id_a, choix_z, next_id_z = self.current_dialogue_data
                                 if choix_a and choix_z:
                                     self.en_attente_choix = True
                                 elif next_id:
                                     self.charger_dialogue(Dialogue.get_par_id(next_id))
                                 else:
-                                    if self.etape_histoire == 1 and self.current_speaker_name == "Luna":
-                                        luna = next((p for p in self.npcs if p.name == "Luna"), None)
-                                        if luna:
-                                            p1 = (luna.rect.x + 300, luna.rect.y)
-                                            p2 = (luna.rect.x + 300, luna.rect.y - 400)
-                                            p3 = (luna.rect.x + 600, luna.rect.y - 400)
-                                            luna.donner_chemin([p1, p2, p3])
+                                    etat_prochain = ETAT_JEU 
                                     
+                                    if event_str is not None:
+                                        event_id = int(event_str)
+                                        if event_id == 1: 
+                                            luna = next((p for p in self.npcs if p.name == "Luna"), None)
+                                            if luna:
+                                                chemin_luna = [(3814, 4404), (3814, 3340), (4810, 3340), (4810, 2965), (5500, 2965), (5500, 2750), (5728, 2750)]
+                                                luna.donner_chemin(chemin_luna)
+                                                
+                                        elif event_id == 2:
+                                            self.scene_actuelle = "C"
+                                            
+                                        elif event_id == 3:
+                                            etat_prochain = ETAT_CINEMATIQUE 
+                                            self.scene_actuelle = "TRANS_B_FREE"
+                                            self.fondu_sens = 1
+                                            self.fondu_start = pg.time.get_ticks()
+                                            self.fondu_duree = 1500
+                                            
                                     self.fermer_dialogue()
-                                    self.etat_jeu = ETAT_JEU
+                                    self.etat_jeu = etat_prochain
 
                     elif event.key == pg.K_a and self.en_attente_choix:
-                        _id, speaker, event, txt, emotion, next_id, choix_a, next_id_a, choix_z, next_id_z = self.current_dialogue_data
+                        _id, speaker, event_str, txt, emotion, next_id, choix_a, next_id_a, choix_z, next_id_z = self.current_dialogue_data
                         if next_id_a:
                             self.charger_dialogue(Dialogue.get_par_id(next_id_a))
                         else:
@@ -196,7 +224,7 @@ class Game:
                             self.etat_jeu = ETAT_JEU
 
                     elif event.key == pg.K_z and self.en_attente_choix:
-                        _id, speaker, event, txt, emotion, next_id, choix_a, next_id_a, choix_z, next_id_z = self.current_dialogue_data
+                        _id, speaker, event_str, txt, emotion, next_id, choix_a, next_id_a, choix_z, next_id_z = self.current_dialogue_data
                         if next_id_z:
                             self.charger_dialogue(Dialogue.get_par_id(next_id_z))
                         else:
@@ -207,7 +235,10 @@ class Game:
                 if event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
                     self.etat_jeu = ETAT_JEU
 
+
     def mettre_a_jour(self):
+        self.verifier_declencheurs_histoire()
+
         if self.etat_jeu == ETAT_INTRO:
             if pg.time.get_ticks() - self.intro_start_time > self.intro_duration:
                 self.etat_jeu = ETAT_JEU
@@ -216,26 +247,12 @@ class Game:
         elif self.etat_jeu in (ETAT_JEU, ETAT_CINEMATIQUE):
             for pnj in self.npcs:
                 if pnj.chemin:
-                    if pnj.suivre_chemin():
-                        if pnj.name == "Luna" and self.etape_histoire == 1:
-                            pnj.chemin = []
-                            pnj.state = "IR"
-                            self.zone_clairiere = pg.Rect(pnj.rect.x - 200, pnj.rect.y - 200, 400, 400)
+                    pnj.suivre_chemin()
                 pnj.animate()
 
             if self.etat_jeu == ETAT_JEU:
                 obstacles = list(self.collisions) + [pnj.rect for pnj in self.npcs]
                 self.player.move(obstacles)
-                
-                if self.etape_histoire == 1 and self.zone_clairiere:
-                    if self.player.rect.colliderect(self.zone_clairiere):
-                        self.etat_jeu = ETAT_CINEMATIQUE
-                        self.scene_actuelle = "CLAIRIERE"
-                        self.etape_scene = 0
-                        self.fondu_duree = 1500
-                        self.fondu_start = pg.time.get_ticks()
-                        self.fondu_sens = 1
-                        self.player.state = "Idle"
             
             self.camera_x = self.player.posix - LARGEUR // 2
             self.camera_y = self.player.visual_center_y - HAUTEUR // 2
@@ -244,44 +261,119 @@ class Game:
             self.jouer_scene()
 
     def jouer_scene(self):
+        progression = 0
+        if self.fondu_start is not None:
+            progression = min(1.0, (pg.time.get_ticks() - self.fondu_start) / self.fondu_duree)
+
         if self.scene_actuelle == "CLAIRIERE":
-            if self.fondu_start is not None:
-                elapsed = pg.time.get_ticks() - self.fondu_start
-                progression = min(1.0, elapsed / self.fondu_duree)
-                
-                if self.fondu_sens == 1: 
-                    self.fondu_alpha = int(progression * 255)
-                    if progression >= 1.0:
-                        luna = next((p for p in self.npcs if p.name == "Luna"), None)
-                        cx, cy = luna.rect.x + 150, luna.rect.y
-                        for p in self.npcs:
-                            if p.name == "Gatouz": p.rect.midbottom = (cx, cy - 100)
-                            elif p.name == "Wina": p.rect.midbottom = (cx + 100, cy - 40)
-                            elif p.name == "Spensi": p.rect.midbottom = (cx + 80, cy + 80)
-                            elif p.name == "Kiko": p.rect.midbottom = (cx - 100, cy - 40)
-                        
-                        self.player.rect.midbottom = (cx - 80, cy + 80)
-                        self.player.posix, self.player.posiy = self.player.rect.center
-                        self.player.direction = "right"
-                        self.player.animate()
-                        
-                        # On lance le dialogue
-                        self.etape_histoire = 2
-                        self.current_speaker_name = "Gatouz"
-                        self.current_speaker_obj = next((p for p in self.npcs if p.name == "Gatouz"), None)
-                        
-                        data = Dialogue.get_premier("Gatouz", self.etape_histoire) 
+            if self.fondu_sens == 1: 
+                self.fondu_alpha = int(progression * 255)
+                if progression >= 1.0:
+                    luna = next((p for p in self.npcs if p.name == "Luna"), None)
+                    cx, cy = luna.rect.x + 150, luna.rect.y
+                    for p in self.npcs:
+                        if p.name == "Gatouz": p.rect.midbottom = (cx, cy - 100)
+                        elif p.name == "Wina": p.rect.midbottom = (cx + 100, cy - 40)
+                        elif p.name == "Spensi": p.rect.midbottom = (cx + 80, cy + 80)
+                        elif p.name == "Kiko": p.rect.midbottom = (cx - 100, cy - 40)
+                    
+                    self.player.rect.midbottom = (cx - 80, cy + 80)
+                    self.player.posix, self.player.posiy = self.player.rect.center
+                    self.player.direction = "right"
+                    self.player.animate()
+                    
+                    self.etape_histoire = 2
+                    self.current_speaker_name = "Gatouz"
+                    self.current_speaker_obj = next((p for p in self.npcs if p.name == "Gatouz"), None)
+                    
+                    data = Dialogue.get_premier("Gatouz", self.etape_histoire) 
+                    if data:
                         self.charger_dialogue(data)
-                        
-                        self.fondu_sens = -1
-                        self.fondu_start = pg.time.get_ticks()
-                        
-                elif self.fondu_sens == -1:
-                    self.fondu_alpha = max(0, 255 - int(progression * 255))
-                    if progression >= 1.0:
-                        self.fondu_start = None
-                        self.scene_actuelle = None
-                        self.etat_jeu = ETAT_DIALOGUE
+                    
+                    self.fondu_sens = -1
+                    self.fondu_start = pg.time.get_ticks()
+                    
+            elif self.fondu_sens == -1:
+                self.fondu_alpha = max(0, 255 - int(progression * 255))
+                if progression >= 1.0:
+                    self.fondu_start = None
+                    self.scene_actuelle = None
+                    self.etat_jeu = ETAT_DIALOGUE
+
+        elif self.scene_actuelle == "TRANS_A_B":
+            if self.fondu_sens == 1:
+                self.fondu_alpha = int(progression * 255)
+                if progression >= 1.0:
+                    self.player.rect.midbottom = (5695, 2920)
+                    self.player.posix, self.player.posiy = 5695, 2920
+
+                    for p in self.npcs:
+                        if p.name == "Luna": p.rect.midbottom = (5715, 2808)
+                        elif p.name == "Gatouz": p.rect.midbottom = (5799, 2694)
+                        elif p.name == "Spensi": p.rect.midbottom = (5960, 2718)
+                        elif p.name == "Wina": p.rect.midbottom = (6035, 2822)
+                        elif p.name == "Kiko": p.rect.midbottom = (6047, 2914)
+                        kiko = next((p for p in self.npcs if p.name == "Kiko"), None)
+                        wina = next((p for p in self.npcs if p.name == "Wina"), None)
+                        if kiko: kiko.state = "IL"; kiko.current_frame = 0; kiko.image = kiko.animations["IL"][0]
+                        if wina: wina.state = "IL"; wina.current_frame = 0; wina.image = wina.animations["IL"][0]
+
+                    data = Dialogue.get_premier("Gatouz", 2)
+                    if data:
+                        self.charger_dialogue(data)
+
+                    self.fondu_sens = -1
+                    self.fondu_start = pg.time.get_ticks()
+
+            elif self.fondu_sens == -1:
+                self.fondu_alpha = max(0, 255 - int(progression * 255))
+                if progression >= 1.0:
+                    self.fondu_start = None
+                    self.scene_actuelle = "B"
+                    self.etat_jeu = ETAT_DIALOGUE
+
+        elif self.scene_actuelle == "TRANS_B_C":
+            if self.fondu_sens == 1:
+                self.fondu_alpha = int(progression * 255)
+                if progression >= 1.0:
+                    self.player.rect.midbottom = (6300, 8802)
+                    self.player.posix, self.player.posiy = 6300, 8802
+
+                    gatouz = next((p for p in self.npcs if p.name == "Gatouz"), None)
+                    if gatouz:
+                        gatouz.rect.midbottom = (6407, 8802)
+
+                    data = Dialogue.get_premier("Gatouz", 3)
+                    if data:
+                        self.charger_dialogue(data)
+
+                    self.fondu_sens = -1
+                    self.fondu_start = pg.time.get_ticks()
+
+            elif self.fondu_sens == -1:
+                self.fondu_alpha = max(0, 255 - int(progression * 255))
+                if progression >= 1.0:
+                    self.fondu_start = None
+                    self.scene_actuelle = "C"
+                    self.etat_jeu = ETAT_DIALOGUE
+        elif self.scene_actuelle == "TRANS_B_FREE":
+            if self.fondu_sens == 1:
+                self.fondu_alpha = int(progression * 255)
+                if progression >= 1.0:
+                    gatouz = next((p for p in self.npcs if p.name == "Gatouz"), None)
+                    if gatouz:
+                        gatouz.rect.midbottom = (5849, 3744)
+                    
+                    self.etape_histoire = 3                    
+                    self.fondu_sens = -1
+                    self.fondu_start = pg.time.get_ticks()
+
+            elif self.fondu_sens == -1:
+                self.fondu_alpha = max(0, 255 - int(progression * 255))
+                if progression >= 1.0:
+                    self.fondu_start = None
+                    self.scene_actuelle = "B_FREE"
+                    self.etat_jeu = ETAT_JEU
 
     def dessiner(self):
         if self.etat_jeu == ETAT_MENU:
@@ -422,3 +514,30 @@ class Game:
         self.current_page = 0
         self.en_attente_choix = False
         self.player.unlock()
+
+    def verifier_declencheurs_histoire(self):
+        if self.etat_jeu != ETAT_JEU:
+            return
+
+        if self.scene_actuelle == "A":
+            luna = next((p for p in self.npcs if p.name == "Luna"), None)
+            if luna and not luna.chemin and luna.rect.x > 5700:
+                dist_x = abs(self.player.posix - luna.rect.centerx)
+                dist_y = abs(self.player.posiy - luna.rect.centery)
+                
+                if dist_x < 313 or dist_y < 251 :
+                    self.etat_jeu = ETAT_CINEMATIQUE
+                    self.scene_actuelle = "TRANS_A_B"
+                    self.fondu_sens = 1
+                    self.fondu_start = pg.time.get_ticks()
+                    self.fondu_duree = 1500
+                    self.player.state = "Idle"
+
+        elif self.scene_actuelle == "B" and self.zone_plage:
+            if self.player.rect.colliderect(self.zone_plage):
+                self.etat_jeu = ETAT_CINEMATIQUE
+                self.scene_actuelle = "TRANS_B_C"
+                self.fondu_sens = 1
+                self.fondu_start = pg.time.get_ticks()
+                self.fondu_duree = 1500
+                self.player.state = "Idle"

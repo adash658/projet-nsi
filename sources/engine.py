@@ -174,6 +174,10 @@ class Game:
                                 if interaction_autorisee:
                                     self.current_speaker_name = npc_name
                                     self.current_speaker_obj = pnj_cible
+                                    
+                                    if npc_name == "Gatouz" and self.etape_histoire == 3:
+                                        self.etape_histoire = 4
+
                                     data = Dialogue.get_premier(npc_name, self.etape_histoire)
                                     if data:
                                         self.charger_dialogue(data)
@@ -205,7 +209,7 @@ class Game:
                                         elif event_id == 2:
                                             self.scene_actuelle = "C"
                                             
-                                        elif event_id == 3:
+                                        elif event_id == 3 and self.etape_histoire == 2:
                                             etat_prochain = ETAT_CINEMATIQUE 
                                             self.scene_actuelle = "TRANS_B_FREE"
                                             self.fondu_sens = 1
@@ -304,6 +308,7 @@ class Game:
             if self.fondu_sens == 1:
                 self.fondu_alpha = int(progression * 255)
                 if progression >= 1.0:
+                    self.etape_histoire = 2
                     self.player.rect.midbottom = (5695, 2920)
                     self.player.posix, self.player.posiy = 5695, 2920
 
@@ -341,7 +346,9 @@ class Game:
 
                     gatouz = next((p for p in self.npcs if p.name == "Gatouz"), None)
                     if gatouz:
-                        gatouz.rect.midbottom = (6407, 8802)
+                        gatouz.rect.midbottom = (6295, 8964)
+                        gatouz.state = "IR"
+
 
                     data = Dialogue.get_premier("Gatouz", 3)
                     if data:
@@ -362,7 +369,8 @@ class Game:
                 if progression >= 1.0:
                     gatouz = next((p for p in self.npcs if p.name == "Gatouz"), None)
                     if gatouz:
-                        gatouz.rect.midbottom = (5849, 3744)
+                        gatouz.rect.midbottom = (6295, 8964) 
+                        gatouz.state = "IR"
                     
                     self.etape_histoire = 3                    
                     self.fondu_sens = -1

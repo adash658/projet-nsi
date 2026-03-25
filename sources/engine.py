@@ -65,14 +65,17 @@ class Game:
         self.font = pg.font.Font(CHEMIN_POLICE, 30)
         self.font_intro = pg.font.Font(POLICE_INTRO, 30)
         self.txt_pause = self.font.render("Pause, appuyez sur Echap", True, NOIR)
-        
+
+        self.font_pause = pg.font.Font(CHEMIN_POLICE, 100)
+        self.txt_pause_grand = self.font_pause.render("PAUSE", True, (255, 255, 255))
+
         self.ecran_titre = pg.transform.scale(pg.image.load("assets/Glade.png").convert(), (LARGEUR, HAUTEUR))
         self.play_button = pg.transform.scale_by(pg.image.load("assets/Menu/Main Menu/Play_Not-Pressed.png").convert_alpha(), 5)
         self.play_pressed_button = pg.transform.scale_by(pg.image.load("assets/Menu/Main Menu/Play_Pressed.png").convert_alpha(), 5)
         self.play_rect = self.play_button.get_rect(midbottom=(LARGEUR // 2, HAUTEUR - 30))
         self.button_pressed = False
-        
-        self.intro_lines = ["12:34 - AN 56 - 07 AOUT", "", """59° 2?' ??" N, 18° 5?' ??" E""", "", ""]
+
+        self.intro_lines = ["12:34 - AN 56 - 07 AOUT", "", """59° 2?' ??" N, 18° 5?' ??" E""", "", "Day One"]
         self.intro_start_time = 0
         self.intro_duration = 5658
         
@@ -409,7 +412,24 @@ class Game:
                 entite.draw(self.screen, self.camera_x, self.camera_y)
 
             if self.etat_jeu == ETAT_PAUSE:
-                self.screen.blit(self.txt_pause, (10, 10))
+                overlay = pg.Surface((LARGEUR, HAUTEUR))
+                overlay.set_alpha(140)
+                overlay.fill((0, 0, 0))
+                self.screen.blit(overlay, (0, 0))
+
+                pause_rect = self.txt_pause_grand.get_rect(center=(LARGEUR // 2, HAUTEUR // 2 - 150))
+                self.screen.blit(self.txt_pause_grand, pause_rect)
+
+                controles = [
+                    "Z Q S D - Deplacements",
+                    "E ou ENTREE - Interagir avec les personnages",
+                    "E ou ENTREE - Passer les dialogues",
+                    "ECHAP - Mettre le jeu en pause",
+                ]
+
+                for i, ligne in enumerate(controles):
+                    surf = self.font.render(ligne, True, (255, 255, 255))
+                    self.screen.blit(surf, surf.get_rect(center=(LARGEUR // 2, HAUTEUR // 2 - 20 + i * 45)))
 
             if self.etat_jeu == ETAT_DIALOGUE:
                 self.draw_dialogue()

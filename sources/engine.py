@@ -5,6 +5,7 @@ from sources.npc import NPC
 from pytmx.util_pygame import load_pygame
 from sources.Tile import Tile, CollisionTile, PolygonCollisionTile
 from sources.database import Dialogue
+from random import choice
 
 def preparer_portrait(image_brute, hauteur_finale, epaisseur_bordure):
     largeur_origine, hauteur_origine = image_brute.get_size()
@@ -110,7 +111,18 @@ class Game:
         self.fin_lines = ["Day 1", "", "La nuit tombe sur l'île.", "", "End of Chapter 1","To be continued"]
         self.fin_start_time = 0
         self.fin_fondu_start = None
-
+        
+        pg.mixer.init()
+        self.MUSIC_END = pg.USEREVENT + 1
+        pg.mixer.music.set_endevent(self.MUSIC_END)
+        self.jouer_musique_aleatoire()
+        self.ambiance = pg.mixer.Sound("assets/musique/ambiance.wav")
+        self.ambiance.set_volume(0.4)
+        self.ambiance.play()
+        self.ambiance_timer = None
+        self.prochaine_musique = 0
+        self.attente_musique = False
+        
     def run(self):
         while self.play:
             self.horloge.tick(FPS)
@@ -123,6 +135,10 @@ class Game:
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 self.play = False
+            if event.type == self.MUSIC_END:
+                if self.etat_jeu != ETAT_PAUSE:
+                    self.attente_musique = True
+                    self.prochaine_musique = pg.time.get_ticks() + 45000  
 
             if self.etat_jeu == ETAT_MENU:
                 if event.type == pg.KEYDOWN and event.key == pg.K_RETURN:
@@ -180,6 +196,7 @@ class Game:
                         print("Debug : Skip vers event 9 (Plage soir)")
                     elif event.key == pg.K_ESCAPE:
                         self.etat_jeu = ETAT_PAUSE
+                        self.ambiance.stop()
                     elif event.key == pg.K_p:
                         print(f"Position Joueur : x={self.player.rect.centerx}, y={self.player.rect.centery}")
                     elif event.key in (pg.K_e, pg.K_RETURN): 
@@ -371,11 +388,21 @@ class Game:
             elif self.etat_jeu == ETAT_PAUSE:
                 if event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE:
                     self.etat_jeu = ETAT_JEU
-
+                    self.ambiance.play() 
 
     def mettre_a_jour(self):
         self.verifier_declencheurs_histoire()
-
+        if self.attente_musique:
+            if pg.time.get_ticks() >= self.prochaine_musique:
+                self.jouer_musique_aleatoire()
+                self.attente_musique = False
+        if self.ambiance_timer is not None:
+            if pg.time.get_ticks() - self.ambiance_timer > 10000: 
+                self.ambiance.play()
+                self.ambiance_timer = None
+        elif self.etat_jeu != ETAT_PAUSE and not self.ambiance.get_num_channels():  
+            self.ambiance_timer = pg.time.get_ticks()
+            
         if self.etat_jeu == ETAT_INTRO:
             if pg.time.get_ticks() - self.intro_start_time > self.intro_duration:
                 self.etat_jeu = ETAT_JEU
@@ -784,3 +811,8 @@ class Game:
                         self.current_speaker_obj = wina
                         self.charger_dialogue(data)
                         self.etat_jeu = ETAT_DIALOGUE
+    def jouer_musique_aleatoire(self):
+       musiques = ["assets/musique/Amb1.wav", "assets/musique/Amb2.wav", "assets/musique/Amb3.wav","assets/musique/Amb4.wav","assets/musique/Amb5.wav","assets/musique/Amb6.wav","assets/musique/Amb7.wav","assets/musique/Amb5-1.wav","assets/musique/Guit1.wav","assets/musique/Guit2.wav","assets/musique/Guit3.wav","assets/musique/Guitt.wav","assets/musique/Guit1-1.wav","assets/musique/Paino3.wav","assets/musique/Siff-1.wav","assets/musique/Siff-2.wav"]
+       pg.mixer.music.load(choice(musiques))
+       pg.mixer.music.set_volume(choice([0.15, 0.2, 0.25]))
+       pg.mixer.music.play()

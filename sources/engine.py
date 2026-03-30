@@ -812,7 +812,23 @@ class Game:
                         self.charger_dialogue(data)
                         self.etat_jeu = ETAT_DIALOGUE
     def jouer_musique_aleatoire(self):
-       musiques = ["assets/musique/Amb1.wav", "assets/musique/Amb2.wav", "assets/musique/Amb3.wav","assets/musique/Amb4.wav","assets/musique/Amb5.wav","assets/musique/Amb6.wav","assets/musique/Amb7.wav","assets/musique/Amb5-1.wav","assets/musique/Guit1.wav","assets/musique/Guit2.wav","assets/musique/Guit3.wav","assets/musique/Guitt.wav","assets/musique/Guit1-1.wav","assets/musique/Piano3.wav","assets/musique/Siff-1.wav","assets/musique/Siff-2.wav"]
-       pg.mixer.music.load(choice(musiques))
-       pg.mixer.music.set_volume(choice([0.15, 0.2, 0.25]))
-       pg.mixer.music.play()
+        musiques = [
+            "assets/musique/Amb1.wav",
+            "assets/musique/Amb2.wav",
+            "assets/musique/Amb3.wav",
+            "assets/musique/Amb4.wav",
+            "assets/musique/Amb5.wav",
+            "assets/musique/Amb6.wav",
+            "assets/musique/Amb7.wav",
+            "assets/musique/Amb5-1.wav",
+            "assets/musique/Guit2.wav",
+            "assets/musique/Guit3.wav",
+            "assets/musique/Guitt.wav",
+            "assets/musique/Guit1-1.wav",
+            "assets/musique/Piano3.wav",
+            "assets/musique/Siff-1.wav",
+            "assets/musique/Siff-2.wav",
+        ]
+        pg.mixer.music.load(choice(musiques))
+        pg.mixer.music.set_volume(choice([0.15, 0.2, 0.25]))
+        pg.mixer.music.play()

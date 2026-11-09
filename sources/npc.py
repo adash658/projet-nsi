@@ -5,8 +5,9 @@ class NPC:
     def __init__(self, name, x, y, etat_depart="ID"):
         self.name = name
 
-        self.rect = pygame.Rect(0, 0, 48, 16) 
+        self.rect = pygame.Rect(0, 0, 48, 16)
         self.rect.midbottom = (x, y)
+        self.posix, self.posiy = self.rect.center
 
         self.portraits = {}
         emotions = ["angry", "happy", "neutral", "sad"]
@@ -22,7 +23,7 @@ class NPC:
         self.state = etat_depart
         self.current_frame = 0
         self.animation_speed = 0.15
-        
+
         dossier_pnj = f"assets/pnj/{self.name.capitalize()}/"
 
         for direction in ['ID', 'IR', 'IL', 'IU']:
@@ -44,12 +45,30 @@ class NPC:
             self.image = self.animations[self.state][0]
         else:
             self.image = pygame.Surface((32, 32))
-            self.image.fill((255, 0, 255)) 
+            self.image.fill((255, 0, 255))
 
         self.chemin = []
         self.vitesse = 4.2
         self.draw_offset_y = -76
-        
+
+    def changer_etat(self, nouvel_etat):
+        """Change l'orientation/état du PNJ et met à jour sa frame immédiatement."""
+        self.state = nouvel_etat
+        self.current_frame = 0
+        if len(self.animations.get(nouvel_etat, [])) > 0:
+            self.image = self.animations[nouvel_etat][0]
+
+    def placer(self, x, y, ancre="center", etat=None):
+        """Téléporte le PNJ, vide son chemin en cours et change éventuellement son état."""
+        if ancre == "midbottom":
+            self.rect.midbottom = (x, y)
+        else:
+            self.rect.center = (x, y)
+        self.posix, self.posiy = self.rect.center
+        self.chemin = []
+        if etat:
+            self.changer_etat(etat)
+
     def draw(self, screen, camera_x, camera_y):
         npc_rect_screen = self.rect.copy()
         npc_rect_screen.x -= camera_x
@@ -57,12 +76,12 @@ class NPC:
 
         image_rect = self.image.get_rect(
             midbottom=(npc_rect_screen.centerx, npc_rect_screen.bottom - self.draw_offset_y)
-            )
+        )
         screen.blit(self.image, image_rect)
 
     def donner_chemin(self, points):
-        self.chemin = points
-    
+        self.chemin = list(points)
+
     def suivre_chemin(self):
         if not self.chemin:
             if self.state == 'R': self.state = 'IR'
@@ -74,21 +93,21 @@ class NPC:
         cible_x, cible_y = self.chemin[0]
 
         if abs(self.rect.x - cible_x) > self.vitesse:
-            if self.rect.x < cible_x: 
+            if self.rect.x < cible_x:
                 self.rect.x += self.vitesse
                 self.state = 'R'
-            elif self.rect.x > cible_x: 
+            elif self.rect.x > cible_x:
                 self.rect.x -= self.vitesse
                 self.state = 'L'
 
         elif abs(self.rect.y - cible_y) > self.vitesse:
-            if self.rect.y < cible_y: 
+            if self.rect.y < cible_y:
                 self.rect.y += self.vitesse
                 self.state = 'D'
-            elif self.rect.y > cible_y: 
+            elif self.rect.y > cible_y:
                 self.rect.y -= self.vitesse
                 self.state = 'U'
-                
+
         else:
             self.rect.x = cible_x
             self.rect.y = cible_y
@@ -98,7 +117,7 @@ class NPC:
                 map_idle = {'R': 'IR', 'L': 'IL', 'U': 'IU', 'D': 'ID'}
                 self.state = map_idle.get(self.state, 'ID')
                 return True
-            
+
         return False
 
     def animate(self):
@@ -107,5 +126,5 @@ class NPC:
             self.current_frame += self.animation_speed
             if self.current_frame >= len(frames):
                 self.current_frame = 0
-                
+
             self.image = frames[int(self.current_frame)]
